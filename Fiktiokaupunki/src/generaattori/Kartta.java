@@ -407,7 +407,7 @@ public class Kartta {
      * @param y1 toisen janan päätepisteen y-koordinaatti
      * @param x2 toisen janan päätepisteen x-koordinaatti
      * @param y2 toisen janan päätepisteen y-koordinaatti
-     * @param kasittely mitä koordinaattia vastaavalle ruudulle tehdään, jos sellainen on olemassa
+     * @param kasittely mitä koordinaatteja vastaavalle ruudulle tehdään, jos sellainen on olemassa
      */
     public void bresenham(int x1, int y1, int x2, int y2, FunktioRuutuVoid kasittely) {
         int minx = Math.min(x1, x2);
@@ -441,7 +441,7 @@ public class Kartta {
 
     
     /**
-     * Edellinen toisssa muodossa. Koordinaattien sijaan annetaan niitä vastaavat ruudut.
+     * Edellinen toisessa muodossa. Koordinaattien sijaan annetaan niitä vastaavat ruudut.
      * @param a toinen janan päätepiste
      * @param b toinen janan päätepiste
      * @param kasittely mitä janalla oleville ruuduille tehdään
@@ -570,8 +570,8 @@ public class Kartta {
     
     /**
      * Luo annetusta ruutulistasta oman tonttinsa. Tontin maankäytön on oltava yhtenäinen.
-     * @param alue Ruudut, jotka kuuluvat muodostettavaan tonttiin.
-     * @param tyyppi Maankäyttötyyppi, jota tontti edustaa.
+     * @param alue ruudut, jotka kuuluvat muodostettavaan tonttiin
+     * @param tyyppi maankäyttötyyppi, jota tontti edustaa
      */
     public void luoTontti(ArrayList<Ruutu> alue, int tyyppi) {
     	int nro = ++tontteja;
