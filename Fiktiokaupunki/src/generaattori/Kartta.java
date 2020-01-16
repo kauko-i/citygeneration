@@ -192,7 +192,7 @@ public class Kartta {
      * Floodfill-algoritmi.
      * @param i lähtöruudun x-koordinaatti
      * @param j lähtöruudun y-koordinaatti
-     * @param kasittely miten algoritmin alaisille ruuduille tehdään
+     * @param kasittely mitä algoritmin alaisille ruuduille tehdään
      * @param ehto mikä ehto ruudun on täytettävä, jotta se menee algoritmin alle
      */
     public void floodfill(int i, int j, FunktioRuutuVoid kasittely, FunktioRuutuBoolean ehto) {
