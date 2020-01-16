@@ -625,7 +625,7 @@ public class Kartta {
      * Pääohjelma. Generointiprosessin mielekkyys on ehkä kyseenalainen, mutta proesssi toimii esimerkkinä 
      * muun ohjelmakoodin käytöstä.
      * @param args ei käytössä
-     * @throws FileNotFoundException jos tiedostoon luku tai kirjoitus ei onnistu
+     * @throws FileNotFoundException jos tiedoston luku tai kirjoitus ei onnistu
      */
     public static void main(String[] args) throws FileNotFoundException {
     	// perustiedot
