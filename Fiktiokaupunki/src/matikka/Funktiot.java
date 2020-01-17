@@ -34,7 +34,7 @@ public class Funktiot {
     
     /**
      * @param r
-     * @return lista kokonaislukuvektoreista, joiden pituus on vähintään r mutta alle r + 1.
+     * @return lista kokonaislukuvektoreista, joiden pituus on vähintään r mutta alle r + 1
      */
     public static ArrayList<int[]> sadekeha(int r) {
     	int minr2 = r*r;
