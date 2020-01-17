@@ -622,7 +622,7 @@ public class Kartta {
     
     
     /**
-     * Pääohjelma. Generointiprosessin mielekkyys on ehkä kyseenalainen, mutta proessi toimii esimerkkinä 
+     * Pääohjelma. Generointiprosessin mielekkyys on ehkä kyseenalainen, mutta prosessi toimii esimerkkinä 
      * muun ohjelmakoodin käytöstä.
      * @param args ei käytössä
      * @throws FileNotFoundException jos tiedoston luku tai kirjoitus ei onnistu
