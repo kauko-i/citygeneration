@@ -36,7 +36,7 @@ public class Keko<T> {
     private int koko;
 
     /**
-     * @param p prioriteetti alkioiden lajitteluperuste
+     * @param p alkioiden lajitteluperuste
      */
 	public Keko(FT2Double<T> p) {
         this(p, null, ALOITUSKOKO);
@@ -104,7 +104,7 @@ public class Keko<T> {
     
     
     /**
-     * Lisää kekoon uuden alkion
+     * Lisää kekoon uuden alkion.
      * @param alkio kekoon lisättävä alkio
      */
     public void lisaa(T alkio) {
