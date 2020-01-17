@@ -23,7 +23,7 @@ public class Funktiot {
     
     
     /**
-     * normaalijakauman tiheysfunktio varianssin ollessa 1 ja keskihajonnan ollessa 0
+     * normaalijakauman tiheysfunktio varianssin ollessa 1 ja keskiarvon ollessa 0
      * @param x parametri
      * @return normaalijakauman tiheys x:ssä.
      */

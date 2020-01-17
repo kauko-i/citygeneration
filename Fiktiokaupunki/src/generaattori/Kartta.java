@@ -909,7 +909,7 @@ public class Kartta {
         	});
         }
         
-        // Puistot määritetään valitsemalla satunnaisia kortteleita alle 2 keskihajonnan päästä keskustasta. Kadut eivät saa läpäistä puistoja.
+        // Puistot määritetään valitsemalla satunnaisia kortteleita alle 2 keskihajonnan päästä keskustasta.
         ArrayList<ArrayList<Ruutu>> korttelit2 = new ArrayList<ArrayList<Ruutu>>();
         final boolean[][] kasitelty2 = new boolean[n][n];
         int pintaala = 0;
@@ -943,7 +943,7 @@ public class Kartta {
         	korttelit2.remove(i);
         	puistoa += kortteli.size();
         }
-        
+        // Puiston läpäisevät kadunpätkät poistetaan.
         for (int i = 0; i < n; i++) {
         	for (int j = 0; j < n; j++) {
         		if (map.sisalto[i][j].katu != 1) continue;
