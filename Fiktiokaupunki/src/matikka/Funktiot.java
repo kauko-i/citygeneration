@@ -59,10 +59,10 @@ public class Funktiot {
      * @param y3 Kolmannen kärkipisteen y-koordinaatti
      * @return x1- ja y1-koordinaatteja vastaava kulma radiaaneina
      */
-    public static double kulma(int x1, int y1, int x2, int y2, int x3, int y3) {
-		int a2 = (x1 - x2)*(x1 - x2) + (y1 - y2)*(y1 - y2);
-		int b2 = (x1 - x3)*(x1 - x3) + (y1 - y3)*(y1 - y3);
-		int c2 = (x2 - x3)*(x2 - x3) + (y2 - y3)*(y2 - y3);
-		return Math.acos(1.0*(a2 + b2 - c2)/2/Math.sqrt(a2)/Math.sqrt(b2));
+    public static double kulma(double x1, double y1, double x2, double y2, double x3, double y3) {
+    	double a2 = (x1 - x2)*(x1 - x2) + (y1 - y2)*(y1 - y2);
+    	double b2 = (x1 - x3)*(x1 - x3) + (y1 - y3)*(y1 - y3);
+    	double c2 = (x2 - x3)*(x2 - x3) + (y2 - y3)*(y2 - y3);
+		return Math.acos((a2 + b2 - c2)/2/Math.sqrt(a2)/Math.sqrt(b2));
     }
 }
