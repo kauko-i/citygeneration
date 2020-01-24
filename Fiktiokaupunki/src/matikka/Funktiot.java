@@ -10,7 +10,6 @@ import java.util.ArrayList;
 public class Funktiot {
 	
 	private static final double GAUSS_ALKU = 1/Math.sqrt(2*Math.PI);
-    private static double[] neliojuuret = neliojuuret(256);
 
 	/**
 	 * Perlin-kohinan käyttämä polynomi, joka tekee tuloksesta hienomman
@@ -49,29 +48,6 @@ public class Funktiot {
     	return palaute;
     }
     
-    
-    /**
-     * Laskee ja palauttaa taulukon kokonaislukujen neliöjuurista.
-     * @param n mihin asti taulukko yltää
-     * @return kokonaislukujen neliöjuuritaulukko
-     */
-    public static double[] neliojuuret(int n) {
-        double[] juuret = new double[n];
-        for (int i = 0; i < n; i++) juuret[i] = Math.sqrt(i);
-        return juuret;
-    }
-    
-    
-    /**
-     * Palauttaa kokonaisluvun neliöjuuren taulukon perusteella. Empiiristen kokeiden nojalla taulukointi nopeuttaa olennaisesti ohjelmaa, joka tarvitsee toistuvasti kokonaislukujen neliöjuuria.
-     * @param x kokonaisluku, jonka neliöjuuri tarvitaan
-     * @return x:n neliöjuuri
-     */
-    public static double neliojuuri(int x) {
-    	while (neliojuuret.length <= x) neliojuuret = neliojuuret(neliojuuret.length*2);
-    	return neliojuuret[x];
-    }
-    
 
     /**
      * Laskee kolmion kulman kärkipisteiden ja kosinilauseen perusteella.
@@ -87,6 +63,6 @@ public class Funktiot {
 		int a2 = (x1 - x2)*(x1 - x2) + (y1 - y2)*(y1 - y2);
 		int b2 = (x1 - x3)*(x1 - x3) + (y1 - y3)*(y1 - y3);
 		int c2 = (x2 - x3)*(x2 - x3) + (y2 - y3)*(y2 - y3);
-		return Math.acos(1.0*(a2 + b2 - c2)/2/neliojuuri(a2)/neliojuuri(b2));
+		return Math.acos(1.0*(a2 + b2 - c2)/2/Math.sqrt(a2)/Math.sqrt(b2));
     }
 }

@@ -52,6 +52,7 @@ public class Kartta {
 	
 	/**
 	 * Kartta käsitellään kaksiuloitteisena ruututaulukkona, jossa ruutu on oma luokkansa.
+	 * Kukin ruutu vastaa 25 neliömetriä.
 	 * @author Ilari Kauko
 	 */
     public static class Ruutu {
@@ -235,8 +236,9 @@ public class Kartta {
      * @param tiet Kuvaa värit, joilla kutakin tietyyppiä merkitään. Tässä versiossa teitä on vain yhtä tyyppiä.
      * @param tonttiraja millä värillä tonttirajaa merkitään
      * @param rata millä värillä rautatietä kuvataan
+     * @param korkeuskayra millä värillä korkeuskäyrää kuvataan
      */
-    public void piirra(String tiedosto, Color[] varit, Color[] tiet, Color tonttiraja, Color rata) {
+    public void piirra(String tiedosto, Color[] varit, Color[] tiet, Color tonttiraja, Color rata, Color korkeuskayra) {
         BufferedImage bImg = new BufferedImage(sivu, sivu, BufferedImage.TYPE_INT_RGB);
         Graphics g = (Graphics2D)bImg.getGraphics();
         int kayravali = 5;
@@ -248,6 +250,7 @@ public class Kartta {
             		g.fillRect(i,  j, 1, 1);
             	}
             	if (sisalto[i][j].maankaytto == 0 && sisalto[i][j].katu == 0) {
+            		// Metsä- tai peltoalueelle piirretään korkeuskäyrät. Ne merkitään 5 metrin välein.
 	        		boolean kayraa = false;
 	        		for (int k = i - 1; k <= i + 1; k++) {
 	        			for (int l = j - 1; l <= j + 1; l++) {
@@ -255,7 +258,7 @@ public class Kartta {
 	        			}
 	        		}
 	        		if (!kayraa) continue;
-	                g.setColor(new Color(102,51,0));
+	                g.setColor(korkeuskayra);
 	                g.fillRect(i, j, 1, 1);
             	}
 				boolean tonttir = false;
@@ -287,9 +290,10 @@ public class Kartta {
             }
         }
         
+        // Vasempaan yläreunaan tulee 500 metrin mittatikku.
         g.setFont(new Font("Arial", Font.PLAIN, 10));
         g.drawString("500 m", 20, 30);
-        g.drawLine(10, 35, 210, 35);
+        g.drawLine(10, 35, 110, 35);
         
         try {
             if (ImageIO.write(bImg, "png", new File(tiedosto))) {
@@ -302,6 +306,7 @@ public class Kartta {
     
     
     /**
+     * Kartan oma indeksitarkistin.
      * @param i x-koordinaatti
      * @param j y-koordinaatti
      * @return onko kartalla koordinaattien mukaista ruutua
@@ -356,7 +361,7 @@ public class Kartta {
     
     
     /**
-     * Dijkstran algoritmi. Se käsitellään A*-algoritmina, jossa heuristiikkafunktio palauttaa aina nollan.
+     * Dijkstran algoritmi käsitellään A*-algoritmina, jossa heuristiikkafunktio palauttaa aina nollan.
      * @param lahto ruutu, josta algoritmi aloittaa
      * @param etaisyydet taulukko, johon ruutujen etäisyydet lähdöstä tallennetaan
      * @param edelliset taulukko, johon ruuduista tallennetaan se, mistä ruudusta lyhyin reitti lähdöstä on kyseiseen ruutuun saapunut
@@ -402,7 +407,7 @@ public class Kartta {
     
     
     /**
-     * Bresenhamin algoritmi. Jos lasketuilla koordinaateilla ei ole vastaavaa ruutua, algoritmi sivuuttaa ne.
+     * Bresenhamin linja-algoritmi. Jos lasketuilla koordinaateilla ei ole vastaavaa ruutua, algoritmi sivuuttaa ne.
      * @param x1 toisen janan päätepisteen X-koordinaatti
      * @param y1 toisen janan päätepisteen y-koordinaatti
      * @param x2 toisen janan päätepisteen x-koordinaatti
@@ -633,10 +638,11 @@ public class Kartta {
         Kartta map = new Kartta(n);
         
         Funktio2RuutuaDouble katu = (r1, r2) -> {
-        	double e = Funktiot.neliojuuri(etaisyys2(r1, r2));
+        	double e = Math.sqrt(etaisyys2(r1, r2));
         	if (r2.maankaytto != 1) e += Math.abs(r1.korkeus - r2.korkeus)*16;
         	return e;
         };
+        
         // Luonnonmaantiede määritellään alussa. Keskustan vierestä virtaa joki. Korkeuserot joen eri puolilla perustuvat kahteen eri Perlin-kohinaan.
         double h = 64;
         double kulma = RANDOM.nextDouble()*Math.PI*2;
@@ -814,7 +820,7 @@ public class Kartta {
         	for (int j = 0; j < n; j++) {
         		if (!map.sisalto[i][j].rataa) continue;
         		for (int k = 0; k < n; k++) {
-        			for (int l = 0; l < n; l++) rataan[k][l] = Math.min(rataan[k][l], Funktiot.neliojuuri((k - i)*(k - i) + (l - j)*(l - j)));
+        			for (int l = 0; l < n; l++) rataan[k][l] = Math.min(rataan[k][l], Math.sqrt((k - i)*(k - i) + (l - j)*(l - j)));
         		}
         	}
         }
@@ -875,7 +881,7 @@ public class Kartta {
         			int a2 = (u[i].x - n/2)*(u[i].x - n/2) + (u[i].y - n/2)*(u[i].y - n/2);
         			int b2 = (u[j].x - n/2)*(u[j].x - n/2) + (u[j].y - n/2)*(u[j].y - n/2);
         			int c2 = (u[i].x - u[j].x)*(u[i].x - u[j].x) + (u[i].y - u[j].y)*(u[i].y - u[j].y);
-        			kulma = Math.acos(1.0*(a2 + b2 - c2)/2/Funktiot.neliojuuri(a2)/Funktiot.neliojuuri(b2));
+        			kulma = Math.acos(1.0*(a2 + b2 - c2)/2/Math.sqrt(a2)/Math.sqrt(b2));
         			omallaSuunnalla = omallaSuunnalla && 1 < kulma;
         		}
         	} while (!omallaSuunnalla);
@@ -966,7 +972,7 @@ public class Kartta {
 
         // Kartta yksilöidään valmistumisajankohtansa mukaan.
         String pvm = new SimpleDateFormat("ddMMyyHHmm").format(new Date());
-        map.piirra("/home/ilari-perus/kaupungit/kuvat/"+pvm+".png", new Color[] {Color.green, Color.blue, Color.pink, Color.gray, Color.orange, Color.green, Color.red}, new Color[] {null, Color.white, Color.white, Color.cyan}, Color.red, Color.black);
+        map.piirra("/home/ilari-perus/kaupungit/kuvat/"+pvm+".png", new Color[] {Color.green, Color.blue, Color.pink, Color.gray, Color.orange, Color.green, Color.red}, new Color[] {null, Color.white}, Color.red, Color.black, new Color(102,51,0));
         map.kirjoita("/home/ilari-perus/kaupungit/tietokannat/"+pvm+".dat");
     }
 }

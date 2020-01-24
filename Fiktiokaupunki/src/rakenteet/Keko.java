@@ -70,6 +70,8 @@ public class Keko<T> {
         this.data = (T[])(new Object[n]);
         this.koko = 0;
         if (i == null) return;
+        // Jos identifiointifunktio on annettu, paikat-taulukkoon tallennetaan kunkin keossa olevan alkion indeksi datataulukossa. 
+        // Alkiota vastaava indeksi paikat-taulukossa määritellään idenfifiointifunktiolla.
         this.identifiointi = i;
         this.paikat = new int[n];
     }
@@ -204,10 +206,10 @@ public class Keko<T> {
     
     /**
      * Laskee alkion, jonka epäillään olevan liian ylhäällä, paikkaa. Alkion paikka keossa selvitetään identifiointifunktiolla.
-     * @param nostettava
+     * @param laskettava
      */
-    public void laske(T nostettava) {
-    	laske(paikat[identifiointi.f(nostettava)]);
+    public void laske(T laskettava) {
+    	laske(paikat[identifiointi.f(laskettava)]);
     }
     
     
