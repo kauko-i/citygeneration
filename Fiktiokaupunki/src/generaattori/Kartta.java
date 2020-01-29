@@ -1000,6 +1000,6 @@ public class Kartta {
         // Kartta yksilöidään valmistumisajankohtansa mukaan.
         String pvm = new SimpleDateFormat("ddMMyyHHmm").format(new Date());
         map.piirra("/home/ilari-perus/kaupungit/kuvat/"+pvm+".png", new Color[] {Color.green, Color.blue, Color.pink, Color.gray, Color.orange, Color.green, Color.red}, new Color[] {null, Color.white}, Color.red, Color.black, new Color(102,51,0));
-      //  map.kirjoita("/home/ilari-perus/kaupungit/tietokannat/"+pvm+".dat");
+        map.kirjoita("/home/ilari-perus/kaupungit/tietokannat/"+pvm+".dat");
     }
 }
