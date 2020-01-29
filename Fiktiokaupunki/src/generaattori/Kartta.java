@@ -63,7 +63,7 @@ public class Kartta {
 	
 	/**
 	 * Kartta käsitellään kaksiuloitteisena ruututaulukkona, jossa ruutu on oma luokkansa.
-	 * Kukin ruutu vastaa 25 neliömetriä.
+	 * Idea on, että kukin ruutu vastaa 25 neliömetriä, mutta vain piirra-metodi suorastaan velvoittaa tätä.
 	 * @author Ilari Kauko
 	 */
     public static class Ruutu {
@@ -331,11 +331,11 @@ public class Kartta {
      * @param lahto ruutu, josta algoritmi aloittaa
      * @param etaisyydet taulukko, johon ruutujen etäisyydet lähdöstä tallennetaan
      * @param edelliset taulukko, johon ruuduista tallennetaan se, mistä ruudusta lyhyin reitti lähdöstä on kyseiseen ruutuun saapunut
-     * @param sade kuvaa vektorilistana, miten ruudun "naapurit" haetaan
+     * @param naapurit miten haetaan ruudun naapurit eli ruudut, joihin ruudusta on suora yhteys
      * @param kaari miten kahden ruudun välisen kaaren pituus määritellään
      * @param heuristiikka miten etäisyys ruudusta maaliin arvioidaan
      * @param ehto mikä ehto ruudun on täytettävä, jotta se voidaan hyväksyä maaliksi
-     * @return lähdöstä lähin ehdon täyttävä ruutu tai lähdöstä kaukaisin ruutu, johon reitti on olemassa, jos mikään reitin omaava ruutu ei täytä ehtoa
+     * @return lähdöstä lähin ehdon täyttävä ruutu tai lähdöstä kaukaisin yhteydellinen ruutu, jos mikään yhteydellinen ruutu ei täytä ehtoa
      */
     public Ruutu aTahti(Ruutu lahto, double[][] etaisyydet, Ruutu[][] edelliset, FunktioRuutuRuutulist naapurit, Funktio2RuutuaDouble kaari, FunktioRuutuDouble heuristiikka, FunktioRuutuBoolean ehto) {
         boolean[][] vierailtu = new boolean[sivu][sivu];
@@ -374,10 +374,10 @@ public class Kartta {
      * @param lahto ruutu, josta algoritmi aloittaa
      * @param etaisyydet taulukko, johon ruutujen etäisyydet lähdöstä tallennetaan
      * @param edelliset taulukko, johon ruuduista tallennetaan se, mistä ruudusta lyhyin reitti lähdöstä on kyseiseen ruutuun saapunut
-     * @param sade kuvaa vektorilistana, miten ruudun "naapurit" haetaan
+     * @param naapurit miten haetaan ruudun naapurit eli ruudut, joihin ruudusta on suora yhteys
      * @param kaari miten kahden ruudun välisen kaaren pituus määritellään
      * @param ehto mikä ehto ruudun on täytettävä, jotta se voidaan hyväksyä maaliksi
-     * @return lähdöstä lähin ehdon täyttävä ruutu tai lähdöstä kaukaisin ruutu, johon reitti on olemassa, jos mikään reitin omaava ruutu ei täytä ehtoa
+     * @return lähdöstä lähin ehdon täyttävä ruutu tai lähdöstä kaukaisin yhteydellinen ruutu, jos mikään yhteydellinen ruutu ei täytä ehtoa
      */
     public Ruutu dijkstra(Ruutu lahto, double[][] etaisyydet, Ruutu[][] edelliset, FunktioRuutuRuutulist sade, Funktio2RuutuaDouble kaari, FunktioRuutuBoolean ehto) {
     	return aTahti(lahto, etaisyydet, edelliset, sade, kaari, r -> 0, ehto);
@@ -416,7 +416,7 @@ public class Kartta {
     
     
     /**
-     * Bresenhamin linja-algoritmi. Jos lasketuilla koordinaateilla ei ole vastaavaa ruutua, algoritmi sivuuttaa ne.
+     * Bresenhamin jana-algoritmi. Jos lasketuilla koordinaateilla ei ole vastaavaa ruutua, algoritmi sivuuttaa ne.
      * @param x1 toisen janan päätepisteen X-koordinaatti
      * @param y1 toisen janan päätepisteen y-koordinaatti
      * @param x2 toisen janan päätepisteen x-koordinaatti
@@ -923,7 +923,6 @@ public class Kartta {
         katukohteet.addAll(rakennukset);
         Collections.shuffle(katukohteet);
         int[] korttelit = new int[] {0,0,12,18,12};
-        long alku = System.currentTimeMillis();
         for (int i = 0; i < katukohteet.size() - 1; i += 2) {
         	if (i % 100 == 0) System.out.println(i+"/"+katukohteet.size());
         	lahto = katukohteet.get(i);
@@ -940,7 +939,6 @@ public class Kartta {
         		if (tonttileveys*tonttileveys < etaisyys2(r, finalLahto) && tonttileveys*tonttileveys < etaisyys2(r, finalMaali)) r.katu = 1;
         	});
         }
-        System.out.println("Alku: "+(System.currentTimeMillis() - alku));
         
         // Puistokorttelit valitaan satunnaisesti niistä, joiden satunnaisesti valittu edustajaruutu on alle 2 keskihajonnan päästä keskustasta.
         ArrayList<ArrayList<Ruutu>> korttelit2 = new ArrayList<ArrayList<Ruutu>>();
@@ -1002,6 +1000,6 @@ public class Kartta {
         // Kartta yksilöidään valmistumisajankohtansa mukaan.
         String pvm = new SimpleDateFormat("ddMMyyHHmm").format(new Date());
         map.piirra("/home/ilari-perus/kaupungit/kuvat/"+pvm+".png", new Color[] {Color.green, Color.blue, Color.pink, Color.gray, Color.orange, Color.green, Color.red}, new Color[] {null, Color.white}, Color.red, Color.black, new Color(102,51,0));
-        map.kirjoita("/home/ilari-perus/kaupungit/tietokannat/"+pvm+".dat");
+      //  map.kirjoita("/home/ilari-perus/kaupungit/tietokannat/"+pvm+".dat");
     }
 }
