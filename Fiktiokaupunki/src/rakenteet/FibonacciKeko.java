@@ -1,9 +1,5 @@
 package rakenteet;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Random;
 
 
@@ -173,7 +169,7 @@ public class FibonacciKeko {
 	
 	
 	/**
-	 * Nostaa juurisolmuihin sellaisen solmun, joka ei siellä muuten ole.
+	 * Nostaa juurisolmuihin solmun ja mahdollisesti ylentää sen minimisolmuksi lisää-operaation kautta.
 	 * @param s nostettavaa solmua vastaava kokonaisluku
 	 */
 	public void nostaJuuriin(int s) {

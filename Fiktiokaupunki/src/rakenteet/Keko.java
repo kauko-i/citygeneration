@@ -155,7 +155,6 @@ public class Keko<T> {
     public void laske(int i) {
         int indeksi = i;
         int lapsi = i;
-        if (koko < lapsi) return;
         T siirrettava = data[indeksi];
         double arvo = prioriteetti.f(siirrettava);
         while ((lapsi *= 2) <= koko) {

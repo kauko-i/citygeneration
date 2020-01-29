@@ -9,7 +9,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Random;
 import java.util.Scanner;
 import java.util.Stack;
 
@@ -37,6 +36,10 @@ public class Kartta {
 	public static interface FunktioRuutuDouble {
 		public double f(Ruutu r);
 	}
+	
+	public static interface FunktioRuutuInt {
+		public int f(Ruutu r);
+	}
     
 	public static interface FunktioRuutuVoid {
 		public void f(Ruutu r);
@@ -48,6 +51,14 @@ public class Kartta {
 	
 	public static interface Funktio2RuutuaDoubleDouble {
 		public double f(Ruutu a, Ruutu b, double x);
+	}
+	
+	public static interface FunktioRuutuRuutulist {
+		public ArrayList<Ruutu> f(Ruutu r);
+	}
+	
+	public static interface Funktio2RuutuaInt {
+		public int f(Ruutu a, Ruutu b);
 	}
 	
 	/**
@@ -97,7 +108,6 @@ public class Kartta {
         }
     }
     
-    private static final Random RANDOM = new Random();
     
     private Ruutu[][] sisalto;
     private int sivu;
@@ -152,7 +162,7 @@ public class Kartta {
             Vektori[][] vektorit = new Vektori[ruudukonSivu][ruudukonSivu];
             for (int i = 0; i < ruudukonSivu; i++) {
                 for (int j = 0; j < ruudukonSivu; j++) {
-                    double suunta = RANDOM.nextDouble()*Math.PI*2;
+                    double suunta = Math.random()*Math.PI*2;
                     vektorit[i][j] = new Vektori(Math.cos(suunta), Math.sin(suunta));
                 }
             }
@@ -327,7 +337,7 @@ public class Kartta {
      * @param ehto mikä ehto ruudun on täytettävä, jotta se voidaan hyväksyä maaliksi
      * @return lähdöstä lähin ehdon täyttävä ruutu tai lähdöstä kaukaisin ruutu, johon reitti on olemassa, jos mikään reitin omaava ruutu ei täytä ehtoa
      */
-    public Ruutu aTahti(Ruutu lahto, double[][] etaisyydet, Ruutu[][] edelliset, ArrayList<int[]> sade, Funktio2RuutuaDouble kaari, FunktioRuutuDouble heuristiikka, FunktioRuutuBoolean ehto) {
+    public Ruutu aTahti(Ruutu lahto, double[][] etaisyydet, Ruutu[][] edelliset, FunktioRuutuRuutulist naapurit, Funktio2RuutuaDouble kaari, FunktioRuutuDouble heuristiikka, FunktioRuutuBoolean ehto) {
         boolean[][] vierailtu = new boolean[sivu][sivu];
         double[][] heuristiikat = new double[sivu][sivu];
     	for (int i = 0; i < sivu; i++) {
@@ -340,11 +350,10 @@ public class Kartta {
 		reunat.lisaa(t);
         while (reunat.size() != 0 && !ehto.f(t = reunat.pienin())) {
             vierailtu[t.x][t.y] = true;
-            for (int[] suunta : sade) {
-            	int i = t.x + suunta[0];
-            	int j = t.y + suunta[1];
-            	if (!kartalla(i, j) || vierailtu[i][j]) continue;
-            	Ruutu n = sisalto[i][j];
+            for (Ruutu n : naapurit.f(t)) {
+            	int i = n.x;
+            	int j = n.y;
+            	if (vierailtu[i][j]) continue;
             	double k = etaisyydet[t.x][t.y] + kaari.f(t, n);
             	if (etaisyydet[i][j] <= k) continue;
             	boolean uusi = etaisyydet[i][j] == Double.POSITIVE_INFINITY;
@@ -370,7 +379,7 @@ public class Kartta {
      * @param ehto mikä ehto ruudun on täytettävä, jotta se voidaan hyväksyä maaliksi
      * @return lähdöstä lähin ehdon täyttävä ruutu tai lähdöstä kaukaisin ruutu, johon reitti on olemassa, jos mikään reitin omaava ruutu ei täytä ehtoa
      */
-    public Ruutu dijkstra(Ruutu lahto, double[][] etaisyydet, Ruutu[][] edelliset, ArrayList<int[]> sade, Funktio2RuutuaDouble kaari, FunktioRuutuBoolean ehto) {
+    public Ruutu dijkstra(Ruutu lahto, double[][] etaisyydet, Ruutu[][] edelliset, FunktioRuutuRuutulist sade, Funktio2RuutuaDouble kaari, FunktioRuutuBoolean ehto) {
     	return aTahti(lahto, etaisyydet, edelliset, sade, kaari, r -> 0, ehto);
      }
     
@@ -625,7 +634,7 @@ public class Kartta {
     	return sisalto[(a.x + b.x)/2][(a.y + b.y)/2];
     }
     
-    
+
     /**
      * Pääohjelma. Generointiprosessin mielekkyys on ehkä kyseenalainen, mutta prosessi toimii esimerkkinä 
      * muun ohjelmakoodin käytöstä.
@@ -643,9 +652,9 @@ public class Kartta {
         	return e;
         };
         
-        // Luonnonmaantiede määritellään alussa. Keskustan vierestä virtaa joki. Korkeuserot joen eri puolilla perustuvat kahteen eri Perlin-kohinaan.
+        // Luonnonmaantiede määritellään alussa. Keskustan vierestä virtaa joki, jonka uoma perustuu yhteen Perlin-kohinaan. Korkeuserot joen eri puolilla perustuvat kahteen eri Perlin-kohinaan.
         double h = 64;
-        double kulma = RANDOM.nextDouble()*Math.PI*2;
+        double kulma = Math.random()*Math.PI*2;
         double cos = Math.cos(kulma);
         double sin = Math.sin(kulma);
         for (int i = 0; i <  n; i++) {
@@ -682,9 +691,16 @@ public class Kartta {
         // rakennetun alueen suuripiirteisten rajojen määritys
         ArrayList<int[]> katukeha = new ArrayList<int[]>();
         for (int i = 1; i < 4; i++) katukeha.addAll(Funktiot.sadekeha(i));
+        FunktioRuutuRuutulist katunaapurit = r -> {
+        	ArrayList<Ruutu> palaute = new ArrayList<Ruutu>();
+        	for (int[] suunta : katukeha) {
+        		if (map.kartalla(r.x + suunta[0], r.y + suunta[1])) palaute.add(map.sisalto[r.x+suunta[0]][r.y+suunta[1]]);
+        	}
+        	return palaute;
+        };
         double[][] etaisyydet = new double[n][n];
         Ruutu[][] edelliset = new Ruutu[n][n];
-        map.dijkstra(map.sisalto[n/2][n/2], etaisyydet, edelliset, katukeha, katu, r -> false);
+        map.dijkstra(map.sisalto[n/2][n/2], etaisyydet, edelliset, katunaapurit, katu, r -> false);
         Ruutu[] etaisyydet2 = new Ruutu[n*n];
         for (int i = 0; i < n*n; i++) etaisyydet2[i] = map.sisalto[i/n][i%n];
         Keko<Ruutu> etaisyyskeko = new Keko<Ruutu>(r -> etaisyydet[r.x][r.y], etaisyydet2);
@@ -697,7 +713,7 @@ public class Kartta {
        // Muuttuja sdn kuvaa, montako keskipisteestä lähintä ruutua on alle keskihajonnan päässä keskustasta 
        // kadunkuljettavaa reittiä pitkin. Keskihajonta on rakennuskannan keskimääräinen etäisyys keskustasta. 
        // Käytännössä tämä määrää, miten pienelle alueelle kaupunki keskittyy. 
-        final int sdn = 15000;
+        final int sdn = 5000;
         final double sd = etaisyydet[etaisyydet2[sdn].x][etaisyydet2[sdn].y];
         final Ruutu[] reunat = new Ruutu[(n - 1)*4];
         for (int i = 0; i < n - 1; i++) {
@@ -724,6 +740,14 @@ public class Kartta {
         	if (etaisyydet[r2.x][r2.y] < sd || r2.maankaytto == 1) e *= 4; 
         	return e;
         };
+        ArrayList<int[]> ratakeha = Funktiot.sadekeha(ratapituus);
+        FunktioRuutuRuutulist ratanaapurit = r -> {
+        	ArrayList<Ruutu> palaute = new ArrayList<Ruutu>();
+        	for (int[] suunta : ratakeha) {
+        		if (map.kartalla(r.x + suunta[0], r.y + suunta[1])) palaute.add(map.sisalto[r.x+suunta[0]][r.y+suunta[1]]);
+        	}
+        	return palaute;
+        };
         double ennatys = Double.POSITIVE_INFINITY;
         FunktioRuutuBoolean lahellaReunaa = r -> r.x < ratapituus || r.y < ratapituus || n - ratapituus - 1 < r.x || n - ratapituus - 1 < r.y;
         Ruutu[][] parasReitti = new Ruutu[n][n];
@@ -738,7 +762,7 @@ public class Kartta {
             	for (int j = 0; j < n; j++) rataedelliset[i][j] = null;
             }
             final double finalEnnatys = ennatys;
-            Ruutu rata1 = map.dijkstra(reuna, rataetaisyydet, rataedelliset, Funktiot.sadekeha(ratapituus), (r1, r2) -> ratakaari.f(r1, r2, korkeus), r -> r.maankaytto != 1 && etaisyydet[r.x][r.y] < sd || finalEnnatys <= rataetaisyydet[r.x][r.y]);
+            Ruutu rata1 = map.dijkstra(reuna, rataetaisyydet, rataedelliset, ratanaapurit, (r1, r2) -> ratakaari.f(r1, r2, korkeus), r -> r.maankaytto != 1 && etaisyydet[r.x][r.y] < sd || finalEnnatys <= rataetaisyydet[r.x][r.y]);
             if (ennatys <= rataetaisyydet[rata1.x][rata1.y]) continue;
             ennatys = rataetaisyydet[rata1.x][rata1.y];
             asema = rata1;
@@ -756,7 +780,7 @@ public class Kartta {
         	for (int j = 0; j < n; j++) rataedelliset[i][j] = null;
         }
         rataedelliset[asema.x][asema.y] = parasReitti[asema.x][asema.y];
-        Ruutu lahto1 = map.dijkstra(asema, new double[n][n], rataedelliset, Funktiot.sadekeha(ratapituus), (r1, r2) -> ratakaari.f(r1, r2, asemakorkeus), lahellaReunaa);
+        Ruutu lahto1 = map.dijkstra(asema, new double[n][n], rataedelliset, ratanaapurit, (r1, r2) -> ratakaari.f(r1, r2, asemakorkeus), lahellaReunaa);
         map.luoTie(lahto1, asema, rataedelliset, r -> r.rataa = true);
         
         // Muuttuja kohteita määrää rakennuskannan koon. Se sirotellaan kartalle normaalijakauman mukaan.
@@ -765,7 +789,7 @@ public class Kartta {
         while (rakennukset.size() < kohteita) {
         	for (int i = 0; i < n; i++) {
         		for (int j = 0; j < n; j++) {
-        			if (map.sisalto[i][j].maankaytto != 1 && RANDOM.nextDouble() < Funktiot.gauss(etaisyydet[i][j]/sd) && !map.sisalto[i][j].rataa) {
+        			if (map.sisalto[i][j].maankaytto != 1 && Math.random() < Funktiot.gauss(etaisyydet[i][j]/sd) && !map.sisalto[i][j].rataa) {
         				rakennukset.add(map.sisalto[i][j]);
         			}
         		}
@@ -796,9 +820,15 @@ public class Kartta {
         		}
         	}
         }
+        
+        // "Renkaaseen" kuvaa etäisyyttä rakennuskannan keskihajonnasta. Idea on, että tämä on teollisuudelle sopivin vyöhyke.
         double[][] renkaaseen = new double[n][n];
+        // "Rinteisyys" kuvaa ruudun ja lähistön ruutujen korkeusvaihteluita.
         double[][] rinteisyys = new double[n][n];
+        // "Rataan" kuvaa etäisyyttä rautatiestä linnuntietä.
         double[][] rataan = new double[n][n];
+        // "Teollisuutta" kuvaa teollisuusruutujen määrää ruudun lähistöllä. Alussa tämä on tosin 1, koska nollalla ei voi jakaa.
+        // Taulukko elää koko teollisuusalueen määrityksen ajan.
         int[][] teollisuutta = new int[n][n];
         int rinnetta = 5;
         int maxteollisuus = 10;
@@ -849,7 +879,8 @@ public class Kartta {
         while (silta2.maankaytto == 1) silta2 = edelliset[silta2.x][silta2.y];
         map.bresenham(silta1, silta2, r -> r.katu = 1);
         
-        // Ulosmenoväylien määrityksessä vaaditaan, että kukin väylistä lähtee keskustasta muista eroavaan suuntaan.
+        // Ulosmenoväylien määrityksessä vaaditaan, että kukin väylistä lähtee kaupungista muista eroavaan suuntaan.
+        // Väylät eivät yllä alle keskihajonnan päähän keskustasta.
         Funktio2RuutuaDouble katu2 = (r1, r2) -> {
         	double e = katu.f(r1, r2);
         	final int[] minKatu = new int[] {1};
@@ -868,7 +899,7 @@ public class Kartta {
         	return e;
         };
         double[][] etaisyydet3 = new double[n][n];
-        map.dijkstra(map.sisalto[n/2][n/2], etaisyydet3, edelliset, katukeha, katu2, r -> false);
+        map.dijkstra(map.sisalto[n/2][n/2], etaisyydet3, edelliset, katunaapurit, katu2, r -> false);
         Keko<Ruutu> uloskeko = new Keko<Ruutu>(r -> etaisyydet3[r.x][r.y], reunat);
         final int ulosmenoja = 4;
         Ruutu[] u = new Ruutu[ulosmenoja];
@@ -877,20 +908,14 @@ public class Kartta {
         	do {
         		u[i] = uloskeko.pienin();
         		omallaSuunnalla = true;
-        		for (int j = 0; j < i; j++) {
-        			int a2 = (u[i].x - n/2)*(u[i].x - n/2) + (u[i].y - n/2)*(u[i].y - n/2);
-        			int b2 = (u[j].x - n/2)*(u[j].x - n/2) + (u[j].y - n/2)*(u[j].y - n/2);
-        			int c2 = (u[i].x - u[j].x)*(u[i].x - u[j].x) + (u[i].y - u[j].y)*(u[i].y - u[j].y);
-        			kulma = Math.acos(1.0*(a2 + b2 - c2)/2/Math.sqrt(a2)/Math.sqrt(b2));
-        			omallaSuunnalla = omallaSuunnalla && 1 < kulma;
-        		}
+        		for (int j = 0; j < i; j++) omallaSuunnalla = omallaSuunnalla && 1 < Funktiot.kulma(n/2, n/2, u[i].x, u[i].y, u[j].x, u[j].y);
         	} while (!omallaSuunnalla);
         }
         
         for (int i = 0; i < ulosmenoja; i++) map.luoTie(u[i], map.sisalto[n/2][n/2], edelliset, r -> {
         	if (sd < etaisyydet[r.x][r.y]) r.katu = 1;
         });
-        
+                
         // Katuverkko lasketaan parittamalla rakennusyksiköt satunnaisesti ja muodostamalla pareista yksi kerrallaan 
         // kadut, jotka näitä pareja parhaiten yhdistävät. Kadun ei tarvitse yltää aivan yksikköön asti, jos lähistöllä on jo katu.
         // Reittejä laskettaessa olemassaolevaa katua suositaan.
@@ -898,6 +923,7 @@ public class Kartta {
         katukohteet.addAll(rakennukset);
         Collections.shuffle(katukohteet);
         int[] korttelit = new int[] {0,0,12,18,12};
+        long alku = System.currentTimeMillis();
         for (int i = 0; i < katukohteet.size() - 1; i += 2) {
         	if (i % 100 == 0) System.out.println(i+"/"+katukohteet.size());
         	lahto = katukohteet.get(i);
@@ -909,13 +935,14 @@ public class Kartta {
         	if (lahinKatu != null) maali = lahinKatu;
         	final Ruutu finalMaali = maali;
             Ruutu[][] edelliset2  = new Ruutu[n][n];
-        	map.aTahti(lahto, new double[n][n], edelliset2, katukeha, katu2, r -> katu.f(r, finalMaali)/3, r -> r == finalMaali);
-        	map.luoTie(maali, lahto, edelliset2, r -> {
+        	Ruutu m = map.aTahti(lahto, new double[n][n], edelliset2, katunaapurit, katu2, r -> katu.f(r, finalMaali)/3, r -> r == finalMaali);
+        	map.luoTie(m, lahto, edelliset2, r -> {
         		if (tonttileveys*tonttileveys < etaisyys2(r, finalLahto) && tonttileveys*tonttileveys < etaisyys2(r, finalMaali)) r.katu = 1;
         	});
         }
+        System.out.println("Alku: "+(System.currentTimeMillis() - alku));
         
-        // Puistot määritetään valitsemalla satunnaisia kortteleita alle 2 keskihajonnan päästä keskustasta.
+        // Puistokorttelit valitaan satunnaisesti niistä, joiden satunnaisesti valittu edustajaruutu on alle 2 keskihajonnan päästä keskustasta.
         ArrayList<ArrayList<Ruutu>> korttelit2 = new ArrayList<ArrayList<Ruutu>>();
         final boolean[][] kasitelty2 = new boolean[n][n];
         int pintaala = 0;
@@ -949,6 +976,7 @@ public class Kartta {
         	korttelit2.remove(i);
         	puistoa += kortteli.size();
         }
+        
         // Puiston läpäisevät kadunpätkät poistetaan.
         for (int i = 0; i < n; i++) {
         	for (int j = 0; j < n; j++) {
@@ -964,12 +992,13 @@ public class Kartta {
         		}
         	}
         }
+     
         
         // Puistottomat korttelit jaetaan tontteihin.
         for (ArrayList<Ruutu> kortteli : korttelit2) {
         	map.puolita(kortteli, 0.5, new int[] {0,0,40,200,100});
         }
-
+        
         // Kartta yksilöidään valmistumisajankohtansa mukaan.
         String pvm = new SimpleDateFormat("ddMMyyHHmm").format(new Date());
         map.piirra("/home/ilari-perus/kaupungit/kuvat/"+pvm+".png", new Color[] {Color.green, Color.blue, Color.pink, Color.gray, Color.orange, Color.green, Color.red}, new Color[] {null, Color.white}, Color.red, Color.black, new Color(102,51,0));
