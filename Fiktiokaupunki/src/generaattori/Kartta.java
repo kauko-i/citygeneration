@@ -362,7 +362,7 @@ public class Kartta {
             	if (uusi) {
             		heuristiikat[i][j] = heuristiikka.f(sisalto[i][j]);
             		reunat.lisaa(n);
-            	} else reunat.nosta(n);
+            	} else reunat.laske(n);
             }
         }
         return t;
@@ -651,7 +651,6 @@ public class Kartta {
         	if (r2.maankaytto != 1) e += Math.abs(r1.korkeus - r2.korkeus)*16;
         	return e;
         };
-        
         // Luonnonmaantiede määritellään alussa. Keskustan vierestä virtaa joki, jonka uoma perustuu yhteen Perlin-kohinaan. Korkeuserot joen eri puolilla perustuvat kahteen eri Perlin-kohinaan.
         double h = 64;
         double kulma = Math.random()*Math.PI*2;
@@ -689,8 +688,8 @@ public class Kartta {
         }
                 
         // rakennetun alueen suuripiirteisten rajojen määritys
-        ArrayList<int[]> katukeha = new ArrayList<int[]>();
-        for (int i = 1; i < 4; i++) katukeha.addAll(Funktiot.sadekeha(i));
+        ArrayList<int[]> katukeha = Funktiot.sadekeha(1);
+        for (int i = 2; i < 4; i++) katukeha.addAll(Funktiot.sadekeha(i));
         FunktioRuutuRuutulist katunaapurit = r -> {
         	ArrayList<Ruutu> palaute = new ArrayList<Ruutu>();
         	for (int[] suunta : katukeha) {
@@ -878,6 +877,7 @@ public class Kartta {
         Ruutu silta2 = edelliset[silta1.x][silta1.y];
         while (silta2.maankaytto == 1) silta2 = edelliset[silta2.x][silta2.y];
         map.bresenham(silta1, silta2, r -> r.katu = 1);
+       
         
         // Ulosmenoväylien määrityksessä vaaditaan, että kukin väylistä lähtee kaupungista muista eroavaan suuntaan.
         // Väylät eivät yllä alle keskihajonnan päähän keskustasta.
@@ -923,7 +923,7 @@ public class Kartta {
         katukohteet.addAll(rakennukset);
         Collections.shuffle(katukohteet);
         int[] korttelit = new int[] {0,0,12,18,12};
-        for (int i = 0; i < katukohteet.size() - 1; i += 2) {
+        for (int i = 0; i < katukohteet.size() - 1; i++) {
         	if (i % 100 == 0) System.out.println(i+"/"+katukohteet.size());
         	lahto = katukohteet.get(i);
         	Ruutu lahinKatu = map.tutka(lahto, korttelit[lahto.maankaytto], r -> r.katu != 0);
@@ -934,9 +934,9 @@ public class Kartta {
         	if (lahinKatu != null) maali = lahinKatu;
         	final Ruutu finalMaali = maali;
             Ruutu[][] edelliset2  = new Ruutu[n][n];
-        	Ruutu m = map.aTahti(lahto, new double[n][n], edelliset2, katunaapurit, katu2, r -> katu.f(r, finalMaali)/3, r -> r == finalMaali);
+        	Ruutu m = map.aTahti(lahto, new double[n][n], edelliset2, katunaapurit, katu2, r -> (Math.abs(r.x - finalMaali.x) + Math.abs(r.y - finalMaali.y) + Math.abs(r.korkeus - finalMaali.korkeus)*16)/3, r -> r == finalMaali);
         	map.luoTie(m, lahto, edelliset2, r -> {
-        		if (tonttileveys*tonttileveys < etaisyys2(r, finalLahto) && tonttileveys*tonttileveys < etaisyys2(r, finalMaali)) r.katu = 1;
+        		if (tonttileveys*tonttileveys < etaisyys2(r, finalLahto) && tonttileveys*tonttileveys < etaisyys2(r, m)) r.katu = 1;
         	});
         }
         
@@ -1000,6 +1000,6 @@ public class Kartta {
         // Kartta yksilöidään valmistumisajankohtansa mukaan.
         String pvm = new SimpleDateFormat("ddMMyyHHmm").format(new Date());
         map.piirra("/home/ilari-perus/kaupungit/kuvat/"+pvm+".png", new Color[] {Color.green, Color.blue, Color.pink, Color.gray, Color.orange, Color.green, Color.red}, new Color[] {null, Color.white}, Color.red, Color.black, new Color(102,51,0));
-        map.kirjoita("/home/ilari-perus/kaupungit/tietokannat/"+pvm+".dat");
+       // map.kirjoita("/home/ilari-perus/kaupungit/tietokannat/"+pvm+".dat");
     }
 }
