@@ -428,26 +428,15 @@ public class Kartta {
         int miny = Math.min(y1, y2);
         int maxx = Math.max(x1, x2);
         int maxy = Math.max(y1, y2);
+        double d = 1.0*(y2 - y1)/(x2 - x1);
         if (maxy - miny < maxx - minx) {
-    		double d = 1.0*(y1 - y2)/(maxx - minx);
-    		int ly = y2;
-        	if (minx == x1) {
-        		d *= -1;
-        		ly = y1;
-        	}
             for (int i = minx; i <= maxx; i++) {
-                int j = (int)(d*(i-minx))+ly;
+                int j = (int)((i - x1)*d + y1);
                 if (kartalla(i, j)) kasittely.f(sisalto[i][j]);
             }
         } else {
-    		double d = 1.0*(x1 - x2)/(maxy - miny);
-    		int lx = x2;
-        	if (miny == y1) {
-        		d *= -1;
-        		lx = x1;
-        	}
             for (int j = miny; j <= maxy; j++) {
-                int i = (int)(d*(j-miny))+lx;
+            	int i = (int)((j - y1)/d + x1);
                 if (kartalla(i, j)) kasittely.f(sisalto[i][j]);
             }
         }
