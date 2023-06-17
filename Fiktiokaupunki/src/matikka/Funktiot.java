@@ -65,4 +65,12 @@ public class Funktiot {
     	double c2 = (x2 - x3)*(x2 - x3) + (y2 - y3)*(y2 - y3);
 		return Math.acos((a2 + b2 - c2)/2/Math.sqrt(a2)/Math.sqrt(b2));
     }
+
+    public static double[] kaanto(double x0, double y0, double x, double y, double kulma) {
+        double cos = Math.cos(kulma);
+        double sin = Math.sin(kulma);
+        x -= x0;
+        y -= y0;
+        return new double[]{x0 + x*cos - y*sin, y0 + x*sin + y*cos};
+    }
 }
