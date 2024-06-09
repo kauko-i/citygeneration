@@ -712,7 +712,7 @@ public class Kartta {
         Funktio2RuutuaDouble vanhaKatu = (r1, r2) -> {
             double d = Math.sqrt(etaisyys2(r1, r2));
             if (r1.maankaytto != 1 || r2.maankaytto != 1) d += 100*(r1.korkeus - r2.korkeus)*(r1.korkeus - r2.korkeus);
-            else if (r1.katu == 0 || r2.katu == 0) d *= 4;
+            else if (r2.katu == 0) d *= 4;
             return d;
         };
         map.dijkstra(map.sisalto[n/2][n/2], etaisyydet, edelliset, naapurit, vanhaKatu, r -> false);
@@ -731,27 +731,30 @@ public class Kartta {
         ArrayList<Ruutu> kohteet = new ArrayList<Ruutu>();
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
-                if (map.sisalto[i][j].maankaytto != 1 && Math.random() < 0.06*(1 - Math.max(0, Math.min(1, Funktiot.perlinKayra((etaisyydet[i][j] - reunalle)/100)))))
+                if (map.sisalto[i][j].maankaytto != 1 && Math.random() < 1 - Math.max(0, Math.min(1, Funktiot.perlinKayra((etaisyydet[i][j] - reunalle)/100))))
                     kohteet.add(map.sisalto[i][j]);
             }
         }
         Collections.shuffle(kohteet);
-        while (5000 < kohteet.size()) kohteet.remove(kohteet.size() - 1);
+        while (3000 < kohteet.size()) kohteet.remove(kohteet.size() - 1);
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
-                if (map.sisalto[i][j].maankaytto != 1 && Math.random() < 0.006*(1 - Math.max(0, Math.min(1, Funktiot.perlinKayra((etaisyydet[i][j] - kokoReunalle)/100)))))
+                if (map.sisalto[i][j].maankaytto != 1 && Math.random() < 1 - Math.max(0, Math.min(1, Funktiot.perlinKayra((etaisyydet[i][j] - kokoReunalle)/100))))
                     kohteet.add(map.sisalto[i][j]);
             }
         }
         Collections.shuffle(kohteet);
-        while (50000 < kohteet.size()) kohteet.remove(kohteet.size() - 1);
+        while (30000 < kohteet.size()) kohteet.remove(kohteet.size() - 1);
         int[][] rakennusta = new int[n][n];
         for (Ruutu r : kohteet) {
+            double kaanto = Math.random()*Math.PI;
             for (int i = r.x - 10; i < r.x + 10; i++) {
                 for (int j = r.y - 10; j < r.y + 10; j++) {
-                    if (map.kartalla(i, j)) {
-                        map.sisalto[i][j].maankaytto = Math.max(map.sisalto[i][j].maankaytto, 2);
-                        if (rakennusta[i][j]++ == 10) map.sisalto[i][j].maankaytto = 4;
+                    double[] doubleKaannetty = Funktiot.kaanto(r.x, r.y, i, j, kaanto);
+                    int[] kaannetty = new int[]{(int)doubleKaannetty[0], (int)doubleKaannetty[1]};
+                    if (map.kartalla(kaannetty[0], kaannetty[1]) && map.sisalto[kaannetty[0]][kaannetty[1]].maankaytto != 1) {
+                        map.sisalto[kaannetty[0]][kaannetty[1]].maankaytto = Math.max(map.sisalto[kaannetty[0]][kaannetty[1]].maankaytto, 2);
+                        if (rakennusta[kaannetty[0]][kaannetty[1]]++ == 10) map.sisalto[kaannetty[0]][kaannetty[1]].maankaytto = 4;
                     }
                 }
             }
@@ -838,19 +841,41 @@ public class Kartta {
         		}
         	}
         }
-        for (int i = 0; i < kohteet.size()/20; i++) {
+        ArrayList<Ruutu> lahdot = new ArrayList<Ruutu>(kohteet.subList(0, kohteet.size()/20));
+        ArrayList<Ruutu> maalit = new ArrayList<Ruutu>(kohteet.subList(kohteet.size()/20, kohteet.size()/10));
+        for (int i = 0; i < lahdot.size() && 0 < maalit.size(); i++) {
             System.out.println(i);
             Ruutu lahto = kohteet.get(i);
-            Ruutu maali = kohteet.get(kohteet.size()/20 + i);
-            edelliset = new Ruutu[n][n];
+            final int EHDOKKAITA = maalit.size();
+            double[][] katuetaisyydet = new double[n][n];
             Funktio2RuutuaDouble uusiKatu = (r1, r2) -> {
                 double e = vanhaKatu.f(r1, r2);
-                if (r1.maankaytto == 1 && r2.maankaytto == 1 && r1.katu == 0 && r2.katu == 0) e *= 4;
+                if (r2.katu == 0) e *= 2;
                 return e;
             };
-            Ruutu oikeaMaali = map.dijkstra(lahto, new double[n][n], edelliset, naapurit, uusiKatu, r -> r == maali);
+            Ruutu katulahto = map.dijkstra(lahto, katuetaisyydet, new Ruutu[n][n], naapurit, uusiKatu, r -> r.katu != 0 || 160 < katuetaisyydet[r.x][r.y]);
+            final Ruutu finalLahto = katulahto.katu != 0 ? katulahto : lahto;
+            Keko<Ruutu> maalikeko = new Keko<Ruutu>(r -> etaisyys2(finalLahto, r), new ArrayList<Ruutu>(kohteet.subList(0, EHDOKKAITA)));
+            Ruutu[] maalitjarjestys = new Ruutu[EHDOKKAITA];
+            double[] maalitetaisyys = new double[EHDOKKAITA];
+            double etaisyyssumma = 0;
+            int j = 0;
+            while (0 < maalikeko.size()) {
+                Ruutu next = maalikeko.pienin();
+                etaisyyssumma += 1.0/etaisyys2(next, finalLahto);
+                maalitjarjestys[j] = next;
+                maalitetaisyys[j++] = etaisyyssumma;
+            }
+            double rajaarvo = Math.random()*etaisyyssumma;
+            int maaliIndeksi = 0;
+            while (maalitetaisyys[maaliIndeksi] < rajaarvo) maaliIndeksi++;
+            maalit.remove(maalitetaisyys[maaliIndeksi]);
+            edelliset = new Ruutu[n][n];
+            Ruutu katumaali = map.dijkstra(maalitjarjestys[maaliIndeksi], katuetaisyydet, new Ruutu[n][n], naapurit, uusiKatu, r -> r.katu != 0 || 160 < katuetaisyydet[r.x][r.y]);
+            final Ruutu finalMaali = katumaali.katu != 0 ? katumaali : maalitjarjestys[maaliIndeksi];
+            map.aTahti(finalLahto, new double[n][n], edelliset, naapurit, uusiKatu, r -> Math.sqrt(etaisyys2(finalMaali, r)), r -> r == finalMaali);
 
-            map.luoTie(oikeaMaali, lahto, edelliset, r -> r.katu = 1);
+            map.luoTie(finalMaali, finalLahto, edelliset, r -> r.katu = 1);
         }
         String pvm = new SimpleDateFormat("yyMMddHHmm").format(new Date());
         map.piirra("./piirrokset/jarjestys/"+pvm+".png", new Color[] {Color.green, Color.blue, Color.pink, Color.gray, Color.orange, Color.green, Color.red}, new Color[] {null, Color.white}, Color.red, Color.black, new Color(102,51,0));
