@@ -700,7 +700,6 @@ public class Kartta {
         ArrayList<Ruutu> portit = new ArrayList<Ruutu>();
         while (portit.size() < 3) {
             Ruutu next = reunat.pienin();
-            System.out.println(reunat.size());
             boolean omallaSuunnalla = true;
             for (Ruutu r : portit)
                 omallaSuunnalla = omallaSuunnalla && 1.5 < Funktiot.kulma(n/2, n/2, r.x, r.y, next.x, next.y);
