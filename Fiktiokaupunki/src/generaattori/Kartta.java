@@ -762,6 +762,8 @@ public class Kartta {
         rataedelliset[asema.x][asema.y] = asema2;
         Ruutu ulosmeno = map.dijkstra(asema, new double[n][n], rataedelliset, ratakaaret, rata, r -> r.x < RATAKEHA || r.y < RATAKEHA || n - RATAKEHA < r.x || n - RATAKEHA < r.y);
         map.luoTie(ulosmeno, asema, rataedelliset, r -> r.rataa = true);
+
+        // Save picture
         String pvm = new SimpleDateFormat("ddHHmm").format(new Date());
         String kk = new SimpleDateFormat("yyMM").format(new Date());
         Path kkPath = Paths.get("./jarjestys/"+kk);
