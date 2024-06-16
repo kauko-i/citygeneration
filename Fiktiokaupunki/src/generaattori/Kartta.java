@@ -667,14 +667,13 @@ public class Kartta {
                 else map.sisalto[i][j].korkeus = jokisyvyys + (map.sisalto[i][j].korkeus - jokisyvyys)*map2.sisalto[i][j].korkeus;
             }
         }
-
+        final double siltahinta = 5;
         // Vanhimman keskusta-alueen määritys
         Funktio2RuutuaDouble vanhaKatu = (r1, r2) -> {
             double d = Math.sqrt(etaisyys2(r1, r2));
             double ele1 = r1.maankaytto != 1 ? r1.korkeus : jokisyvyys;
             double ele2 = r2.maankaytto != 1 ? r2.korkeus : jokisyvyys;
-            d += (ele1 - ele2)*(ele1 - ele2);
-            final double siltahinta = 5;
+            d += 2*(ele1 - ele2)*(ele1 - ele2);
             if (r1.maankaytto == 1) d += siltahinta;
             if (r2.maankaytto == 1) d += siltahinta;
             return d;
@@ -775,12 +774,13 @@ public class Kartta {
                 }
             }
         }
+        final double ratasiltahinta = 5;
 
         // Määrittele ulosmenoväylät
         Funktio2RuutuaDouble ulosmenoKatu = (r1, r2) -> {
             double d = vanhaKatu.f(r1, r2);
-            if (ratavyohykkeella[r1.x][r1.y]) d += 10;
-            if (ratavyohykkeella[r2.x][r2.y]) d += 10;
+            if (ratavyohykkeella[r1.x][r1.y]) d += ratasiltahinta;
+            if (ratavyohykkeella[r2.x][r2.y]) d += ratasiltahinta;
             return d;
         };
         Ruutu[][] ulosmenoedelliset = new Ruutu[n][n];
@@ -810,6 +810,25 @@ public class Kartta {
                 map.luoTie(next, map.sisalto[n/2][n/2], ulosmenoedelliset, r -> r.katu = 1);
             }
         }
+
+        Funktio2RuutuaDouble esikaupunkiKatu = (r1, r2) -> {
+            double d = Math.sqrt(etaisyys2(r1, r2));
+            double ele1 = r1.maankaytto == 1 ? jokisyvyys : r1.korkeus;
+            double ele2 = r2.maankaytto == 1 ? jokisyvyys : r2.korkeus;
+            d += 2*(ele1 - ele2)*(ele1 - ele2);
+            if (r1.katu == 0 && r1.maankaytto == 1) d += siltahinta;
+            if (r2.katu == 0 && r2.maankaytto == 1) d += siltahinta;
+            if (ratavyohykkeella[r1.x][r1.y]) d += ratasiltahinta;
+            if (ratavyohykkeella[r2.x][r2.y]) d += ratasiltahinta;
+            return d;
+        };
+        double[][] etaisyydetSillalla = new double[n][n];
+        final int esikaupunkiala = 700000;
+        final int[] esikaupunkia = new int[]{0};
+        map.dijkstra(map.sisalto[n/2][n/2], etaisyydetSillalla, new Ruutu[n][n], katukaaret, esikaupunkiKatu, r -> {
+            r.maankaytto = r.maankaytto == 0 ? 4 : r.maankaytto;
+            return ++esikaupunkia[0] == esikaupunkiala;
+        });
 
         // Save picture
         String pvm = new SimpleDateFormat("ddHHmm").format(new Date());
