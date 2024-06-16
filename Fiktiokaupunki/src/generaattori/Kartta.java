@@ -11,6 +11,10 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Scanner;
 import java.util.Stack;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import javax.imageio.ImageIO;
 
@@ -665,226 +669,42 @@ public class Kartta {
         }
         Kartta map = map2;
 
-        Funktio2RuutuaDouble ulosKatu = (r1, r2) -> {
-            double d = Math.sqrt(etaisyys2(r1, r2));
-            if (r1.maankaytto == 1) d *= 2;
-            if (r2.maankaytto == 1) d *= 2;
-            if (r1.maankaytto != 1 || r2.maankaytto != 1) d += 100*(r1.korkeus - r2.korkeus)*(r1.korkeus - r2.korkeus);
-            return d;
-        };
+        final int SADE = n/3;
 
-        ArrayList<int[]> sadekeha = Funktiot.sadekeha(1);
-        for (int i = 2; i < 4; i++) sadekeha.addAll(Funktiot.sadekeha(i));
-        FunktioRuutuRuutulist naapurit = (r) -> {
-            ArrayList<Ruutu> palaute = new ArrayList<Ruutu>();
-            for (int[] suunta : sadekeha) {
-                if (map.kartalla(r.x + suunta[0], r.y + suunta[1])) palaute.add(map.sisalto[r.x + suunta[0]][r.y + suunta[1]]);
-            }
-            return palaute;
-        };
+        boolean[][] jokipuoli = new boolean[n][n];
+        map.floodfill(n/2, n/2, r -> jokipuoli[r.x][r.y] = true, r -> r.maankaytto == 0);
 
-        double[][] etaisyydet = new double[n][n];
-        Ruutu[][] edelliset = new Ruutu[n][n];
-        map.dijkstra(map.sisalto[n/2][n/2], etaisyydet, edelliset, naapurit, ulosKatu, r -> false);
-        Keko<Ruutu> etaisyyskeko = new Keko<Ruutu>(r -> etaisyydet[r.x][r.y]);
+        Ruutu sillanpaa = map.tutka(map.sisalto[n/2][n/2], n, r -> r.maankaytto == 0 && !jokipuoli[r.x][r.y]);
+        double kulma = Math.atan2(sillanpaa.x - n/2, sillanpaa.y - n/2);
+        double[] suunta1 = Funktiot.kaanto(0, 0, SADE, 0, kulma);
+        double[] suunta2 = Funktiot.kaanto(0, 0, SADE, 0, kulma + Math.PI/3);
+        double[] suunta3 = Funktiot.kaanto(0, 0, SADE, 0, kulma + Math.PI/3*2);
+        int[][] sadekatuun = new int[n][n];
         for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) etaisyyskeko.lisaa(map.sisalto[i][j]);
+            for (int j = 0; j < n; j++) sadekatuun[i][j] = Integer.MAX_VALUE;
         }
-        Keko<Ruutu> reunat = new Keko<Ruutu>(r -> etaisyydet[r.x][r.y]/Math.sqrt(etaisyys2(r, map.sisalto[n/2][n/2])));
-        for (int i = 0; i < n - 1; i++) {
-            reunat.lisaa(map.sisalto[i][0]);
-            reunat.lisaa(map.sisalto[0][i + 1]);
-            reunat.lisaa(map.sisalto[n - 1][i]);
-            reunat.lisaa(map.sisalto[i + 1][n - 1]);
-        }
-        ArrayList<Ruutu> portit = new ArrayList<Ruutu>();
-        while (portit.size() < 3) {
-            Ruutu next = reunat.pienin();
-            boolean omallaSuunnalla = true;
-            for (Ruutu r : portit)
-                omallaSuunnalla = omallaSuunnalla && 1.5 < Funktiot.kulma(n/2, n/2, r.x, r.y, next.x, next.y);
-            if (omallaSuunnalla) {
-                portit.add(next);
-                map.luoTie(next, map.sisalto[n/2][n/2], edelliset, r -> r.katu = 1);
-            }
-        }
-
-        Funktio2RuutuaDouble vanhaKatu = (r1, r2) -> {
-            double d = Math.sqrt(etaisyys2(r1, r2));
-            if (r1.maankaytto != 1 || r2.maankaytto != 1) d += 100*(r1.korkeus - r2.korkeus)*(r1.korkeus - r2.korkeus);
-            else if (r1.katu == 0 || r2.katu == 0) d *= 4;
-            return d;
-        };
-        map.dijkstra(map.sisalto[n/2][n/2], etaisyydet, edelliset, naapurit, vanhaKatu, r -> false);
-        double reunalle = 0;
-        double asemaetaisyys = 0;
-        for (int i = 0; i < 83000; i++) {
-            Ruutu next = etaisyyskeko.pienin();
-            reunalle = etaisyydet[next.x][next.y];
-            asemaetaisyys = Math.sqrt(etaisyys2(next, map.sisalto[n/2][n/2]));
-        }
-        double kokoReunalle = reunalle;
-        for (int i = 0; i < 2500000; i++) {
-            Ruutu next = etaisyyskeko.pienin();
-            kokoReunalle = etaisyydet[next.x][next.y];
-        }
-        ArrayList<Ruutu> kohteet = new ArrayList<Ruutu>();
+        map.bresenham(map.sisalto[(int)(n/2 + suunta1[0])][(int)(n/2 + suunta1[1])], map.sisalto[(int)(n/2 - suunta1[0])][(int)(n/2 - suunta1[1])], r -> sadekatuun[r.x][r.y] = 0);
+        map.bresenham(map.sisalto[(int)(n/2 + suunta2[0])][(int)(n/2 + suunta2[1])], map.sisalto[(int)(n/2 - suunta2[0])][(int)(n/2 - suunta2[1])], r -> sadekatuun[r.x][r.y] = 0);
+        map.bresenham(map.sisalto[(int)(n/2 + suunta3[0])][(int)(n/2 + suunta3[1])], map.sisalto[(int)(n/2 - suunta3[0])][(int)(n/2 - suunta3[1])], r -> sadekatuun[r.x][r.y] = 0);
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
-                if (map.sisalto[i][j].maankaytto != 1 && Math.random() < (1 - Math.max(0, Math.min(1, Funktiot.perlinKayra((etaisyydet[i][j] - reunalle)/100)))))
-                    kohteet.add(map.sisalto[i][j]);
-            }
-        }
-        Collections.shuffle(kohteet);
-        while (1300 < kohteet.size()) kohteet.remove(kohteet.size() - 1);
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
-                if (map.sisalto[i][j].maankaytto != 1 && Math.random() < 0.005*(1 - Math.max(0, Math.min(1, Funktiot.perlinKayra((etaisyydet[i][j] - kokoReunalle)/100)))))
-                    kohteet.add(map.sisalto[i][j]);
-            }
-        }
-        Collections.shuffle(kohteet);
-        while (13000 < kohteet.size()) kohteet.remove(kohteet.size() - 1);
-        int[][] rakennusta = new int[n][n];
-        for (Ruutu r : kohteet) {
-            double kaanto = Math.random()*Math.PI;
-            for (int i = r.x - 20; i < r.x + 20; i++) {
-                for (int j = r.y - 20; j < r.y + 20; j++) {
-                    double[] doubleKaannetty = Funktiot.kaanto(r.x, r.y, i, j, kaanto);
-                    int[] kaannetty = new int[]{(int)doubleKaannetty[0], (int)doubleKaannetty[1]};
-                    if (map.kartalla(i, j)
-                        && map.sisalto[i][j].maankaytto != 1
-                        && Math.abs(kaannetty[0] - r.x) < 10
-                        && Math.abs(kaannetty[1] - r.y) < 10) {
-                        map.sisalto[i][j].maankaytto = Math.max(map.sisalto[i][j].maankaytto, 2);
-                        if (++rakennusta[i][j] == 4) map.sisalto[i][j].maankaytto = 4;
+                if (sadekatuun[i][j] == 0) {
+                    for (int k = 0; k < n; k++) {
+                        for (int l = 0; l < n; l++) sadekatuun[k][l] = Math.min(sadekatuun[k][l], etaisyys2(map.sisalto[i][j], map.sisalto[k][l]));
                     }
                 }
             }
         }
 
-        ArrayList<Ruutu> rata = null;
-        double halvinRatahinta = Double.POSITIVE_INFINITY;
-        Ruutu asema = null;
-        for (double k = 0; k < Math.PI*2; k += 0.01) {
-            int i = n/2 + (int)(Math.cos(k)*asemaetaisyys);
-            int j = n/2 + (int)(Math.sin(k)*asemaetaisyys);
-            ArrayList<Ruutu> rataehdokas = new ArrayList<Ruutu>();
-            double[] kustannus = new double[]{0};
-            map.bresenham(i + (int)(Math.cos(k + Math.PI/2)*n), j + (int)(Math.sin(k + Math.PI/2)*n),
-                i - (int)(Math.cos(k + Math.PI/2)*n), j - (int)(Math.sin(k + Math.PI/2)*n),
-                r -> {
-                    kustannus[0] += (r.korkeus - map.sisalto[i][j].korkeus);
-                    if (r.maankaytto == 1 || r.katu != 0) kustannus[0] += 5;
-                    rataehdokas.add(r);
-                }
-            );
-            if (kustannus[0] < halvinRatahinta) {
-                halvinRatahinta = kustannus[0];
-                rata = rataehdokas;
-                asema = map.sisalto[i][j];
-            }
+        String pvm = new SimpleDateFormat("ddHHmm").format(new Date());
+        String kk = new SimpleDateFormat("yyMM").format(new Date());
+        Path kkPath = Paths.get("./piirrokset/jarjestys/"+kk);
+        try {
+            Files.createDirectories(kkPath);
+        } catch (Exception e) {
+            System.out.println(e);
         }
-        for (Ruutu r : rata) r.rataa = true;
-        double[][] rataan = new double[n][n];
-        double[][] renkaaseen = new double[n][n];
-        double[][] rinteisyysalue = new double[n][n];
-        int[][] teollisuutta = new int[n][n];
-        asema.rakennus = 1;
-        int rinnetta = 2;
-        for (int i = 0; i < n; i++) {
-        	for (int j = 0; j < n; j++) {
-        		renkaaseen[i][j] = Math.max(0, Math.min(1, Funktiot.perlinKayra((etaisyydet[i][j] - reunalle)/100)))
-                 - Math.max(0, Math.min(1, Funktiot.perlinKayra((etaisyydet[i][j] - kokoReunalle)/100)));
-        		double rinteet = 0;
-        		for (int k = i - rinnetta; k <= i + rinnetta; k++) {
-        			for (int l = j - rinnetta; l <= j + rinnetta; l++) {
-        				if ((k - i)*(k - i) + (l - j)*(l - j) <= rinnetta*rinnetta && map.kartalla(k, l) && map.sisalto[i][j].maankaytto != 1) rinteet += Math.abs(map.sisalto[i][j].korkeus - map.sisalto[k][l].korkeus);
-        			}
-        		}
-        		rinteisyysalue[i][j] = rinteet;
-        		rataan[i][j] = Double.POSITIVE_INFINITY;
-        		teollisuutta[i][j] = 1;
-        	}
-        }
-        for (int i = 0; i < n; i++) {
-        	for (int j = 0; j < n; j++) {
-        		if (!map.sisalto[i][j].rataa) continue;
-        		for (int k = 0; k < n; k++) {
-        			for (int l = 0; l < n; l++) rataan[k][l] = Math.min(rataan[k][l], Math.sqrt((k - i)*(k - i) + (l - j)*(l - j)));
-        		}
-        	}
-        }
-
-        ArrayList<Ruutu> teollisuusehdokkaat = new ArrayList<Ruutu>();
-        boolean[][] keossa = new boolean[n][n];
-        for (int i = 0; i < n; i++) {
-        	for (int j = 0; j < n; j++) {
-        		if (1 < map.sisalto[i][j].maankaytto) {
-        			teollisuusehdokkaat.add(map.sisalto[i][j]);
-        			keossa[i][j] = true;
-        		}
-        	}
-        }
-        
-        Keko<Ruutu> teollisuuskeko = new Keko<Ruutu>(r -> rinteisyysalue[r.x][r.y]*rataan[r.x][r.y]/renkaaseen[r.x][r.y]/teollisuutta[r.x][r.y], teollisuusehdokkaat, r -> r.x*n + r.y, n*n);
-        for (int k = 0; k < teollisuusehdokkaat.size()/10; k++) {
-        	Ruutu s = teollisuuskeko.pienin();
-        	s.maankaytto = 3;
-        	keossa[s.x][s.y] = false;
-            int maxteollisuus = 10;
-        	for (int i = s.x - maxteollisuus; i <= s.x + maxteollisuus; i++) {
-        		for (int j = s.y - maxteollisuus; j <= s.y + maxteollisuus; j++) {
-        			if ((i - s.x)*(i - s.x) + (j - s.y)*(j - s.y) <= maxteollisuus*maxteollisuus && map.kartalla(i, j) && keossa[i][j]) {
-        				if ((i - s.x)*(i - s.x) + (j - s.y)*(j - s.y) <= maxteollisuus*maxteollisuus) {
-        					teollisuutta[i][j]++;
-        					teollisuuskeko.nosta(map.sisalto[i][j]);
-        				}
-        			}
-        		}
-        	}
-        }
-
-        ArrayList<Ruutu> lahdot = new ArrayList<Ruutu>(kohteet.subList(0, kohteet.size()/2));
-        ArrayList<Ruutu> maalit = new ArrayList<Ruutu>(kohteet.subList(kohteet.size()/2, kohteet.size()));
-        Funktio2RuutuaDouble uusiKatu = (r1, r2) -> {
-            double e = vanhaKatu.f(r1, r2);
-            if (r1.katu == 0 || r2.katu == 0) e *= 2;
-            return e;
-        };
-        for (int i = 0; i < lahdot.size() && 0 < maalit.size(); i++) {
-            System.out.println(i);
-            Ruutu lahto = kohteet.get(i);
-            final int EHDOKKAITA = maalit.size();
-            double[][] katuetaisyydet = new double[n][n];
-            Ruutu katulahto = map.dijkstra(lahto, katuetaisyydet, new Ruutu[n][n], naapurit, uusiKatu, r -> r.katu != 0 || 900 < etaisyys2(r, lahto));
-            final Ruutu finalLahto = katulahto.katu != 0 ? katulahto : lahto;
-            Keko<Ruutu> maalikeko = new Keko<Ruutu>(r -> etaisyys2(finalLahto, r), new ArrayList<Ruutu>(kohteet.subList(0, EHDOKKAITA)));
-            Ruutu[] maalitjarjestys = new Ruutu[EHDOKKAITA];
-            double[] maalitetaisyys = new double[EHDOKKAITA];
-            double etaisyyssumma = 0;
-            int j = 0;
-            while (0 < maalikeko.size()) {
-                Ruutu next = maalikeko.pienin();
-                if (etaisyys2(next, finalLahto) < 900) continue;
-                etaisyyssumma += 1.0/etaisyys2(next, finalLahto);
-                maalitjarjestys[j] = next;
-                maalitetaisyys[j++] = etaisyyssumma;
-            }
-            double rajaarvo = Math.random()*etaisyyssumma;
-            int maaliIndeksi = 0;
-            while (maalitetaisyys[maaliIndeksi] < rajaarvo) maaliIndeksi++;
-            maalit.remove(maalitjarjestys[maaliIndeksi]);
-            edelliset = new Ruutu[n][n];
-            Ruutu indeksimaali = maalitjarjestys[maaliIndeksi];
-            Ruutu katumaali = map.dijkstra(maalitjarjestys[maaliIndeksi], katuetaisyydet, new Ruutu[n][n], naapurit, uusiKatu, r -> r.katu != 0 || 900 < etaisyys2(r, indeksimaali));
-            final Ruutu finalMaali = katumaali.katu != 0 ? katumaali : maalitjarjestys[maaliIndeksi];
-            map.aTahti(finalLahto, new double[n][n], edelliset, naapurit, uusiKatu, r -> Math.sqrt(etaisyys2(finalMaali, r)), r -> r == finalMaali);
-
-            map.luoTie(finalMaali, finalLahto, edelliset, r -> r.katu = 1);
-        }
-        String pvm = new SimpleDateFormat("yyMMddHHmm").format(new Date());
-        map.piirra("./piirrokset/jarjestys/"+pvm+".png", new Color[] {Color.green, Color.blue, Color.pink, Color.gray, Color.orange, Color.green, Color.red}, new Color[] {null, Color.white}, Color.red, Color.black, new Color(102,51,0));
+        map.piirra("./piirrokset/jarjestys/"+kk+"/"+pvm+".png", new Color[] {Color.green, Color.blue, Color.pink, Color.gray, Color.orange, Color.green, Color.red}, new Color[] {null, Color.white}, Color.red, Color.black, new Color(102,51,0));
         /**
         int RANTAAN = 200;
         for (int i = n/2 - RANTAAN; i <= n/2 + RANTAAN; i++) {
