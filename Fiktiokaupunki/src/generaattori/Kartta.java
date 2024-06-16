@@ -644,57 +644,33 @@ public class Kartta {
         // Luonnonmaantiede määritellään alussa. Keskustan vierestä virtaa joki, jonka uoma perustuu yhteen Perlin-kohinaan. Korkeuserot joen eri puolilla perustuvat kahteen eri Perlin-kohinaan.
         double h = 1;
         map3.luoKorkeuserot(2, n, h);
-        Kartta map2 = new Kartta(n);
+        Kartta map = new Kartta(n);
         double rinteisyys = 500;
-        map2.luoKorkeuserot(2, 8, rinteisyys);
+        map.luoKorkeuserot(2, 8, rinteisyys);
         double jokisuunta = Math.random()*Math.PI*2;
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
                 map3.sisalto[i][j].korkeus *= map3.sisalto[i][j].korkeus;
-                map2.sisalto[i][j].korkeus += 2*rinteisyys*Funktiot.kaanto(0, 0, i, j, jokisuunta)[0]/n;
+                map.sisalto[i][j].korkeus += 2*rinteisyys*Funktiot.kaanto(0, 0, i, j, jokisuunta)[0]/n;
             }
         }
         double jokietaisyys = 50;
         double[] jokipaikka = Funktiot.kaanto(n/2, n/2, n/2 + jokietaisyys, n/2, -jokisuunta);
-        double jokipohja = map2.sisalto[(int)jokipaikka[0]][(int)jokipaikka[1]].korkeus;
+        double jokipohja = map.sisalto[(int)jokipaikka[0]][(int)jokipaikka[1]].korkeus;
         for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) map2.sisalto[i][j].korkeus = Math.abs(map2.sisalto[i][j].korkeus - jokipohja);
+            for (int j = 0; j < n; j++) map.sisalto[i][j].korkeus = Math.abs(map.sisalto[i][j].korkeus - jokipohja);
         }
         double jokisyvyys = 10;
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
-                if (map2.sisalto[i][j].korkeus < jokisyvyys) map2.sisalto[i][j].maankaytto = 1;
-                else map2.sisalto[i][j].korkeus = jokisyvyys + (map2.sisalto[i][j].korkeus - jokisyvyys)*map3.sisalto[i][j].korkeus;
+                if (map.sisalto[i][j].korkeus < jokisyvyys) map.sisalto[i][j].maankaytto = 1;
+                else map.sisalto[i][j].korkeus = jokisyvyys + (map.sisalto[i][j].korkeus - jokisyvyys)*map3.sisalto[i][j].korkeus;
             }
         }
-        Kartta map = map2;
 
         final int SADE = n/3;
 
-        boolean[][] jokipuoli = new boolean[n][n];
-        map.floodfill(n/2, n/2, r -> jokipuoli[r.x][r.y] = true, r -> r.maankaytto == 0);
 
-        Ruutu sillanpaa = map.tutka(map.sisalto[n/2][n/2], n, r -> r.maankaytto == 0 && !jokipuoli[r.x][r.y]);
-        double kulma = Math.atan2(sillanpaa.x - n/2, sillanpaa.y - n/2);
-        double[] suunta1 = Funktiot.kaanto(0, 0, SADE, 0, kulma);
-        double[] suunta2 = Funktiot.kaanto(0, 0, SADE, 0, kulma + Math.PI/3);
-        double[] suunta3 = Funktiot.kaanto(0, 0, SADE, 0, kulma + Math.PI/3*2);
-        int[][] sadekatuun = new int[n][n];
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) sadekatuun[i][j] = Integer.MAX_VALUE;
-        }
-        map.bresenham(map.sisalto[(int)(n/2 + suunta1[0])][(int)(n/2 + suunta1[1])], map.sisalto[(int)(n/2 - suunta1[0])][(int)(n/2 - suunta1[1])], r -> sadekatuun[r.x][r.y] = 0);
-        map.bresenham(map.sisalto[(int)(n/2 + suunta2[0])][(int)(n/2 + suunta2[1])], map.sisalto[(int)(n/2 - suunta2[0])][(int)(n/2 - suunta2[1])], r -> sadekatuun[r.x][r.y] = 0);
-        map.bresenham(map.sisalto[(int)(n/2 + suunta3[0])][(int)(n/2 + suunta3[1])], map.sisalto[(int)(n/2 - suunta3[0])][(int)(n/2 - suunta3[1])], r -> sadekatuun[r.x][r.y] = 0);
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
-                if (sadekatuun[i][j] == 0) {
-                    for (int k = 0; k < n; k++) {
-                        for (int l = 0; l < n; l++) sadekatuun[k][l] = Math.min(sadekatuun[k][l], etaisyys2(map.sisalto[i][j], map.sisalto[k][l]));
-                    }
-                }
-            }
-        }
 
         String pvm = new SimpleDateFormat("ddHHmm").format(new Date());
         String kk = new SimpleDateFormat("yyMM").format(new Date());
