@@ -640,17 +640,17 @@ public class Kartta {
     public static void main(String[] args) throws FileNotFoundException {
     	// perustiedot
     	int n = 2048;
-        Kartta map3 = new Kartta(n);
+        Kartta map2 = new Kartta(n);
         // Luonnonmaantiede määritellään alussa. Keskustan vierestä virtaa joki, jonka uoma perustuu yhteen Perlin-kohinaan. Korkeuserot joen eri puolilla perustuvat kahteen eri Perlin-kohinaan.
         double h = 1;
-        map3.luoKorkeuserot(2, n, h);
+        map2.luoKorkeuserot(2, n, h);
         Kartta map = new Kartta(n);
         double rinteisyys = 500;
         map.luoKorkeuserot(2, 8, rinteisyys);
         double jokisuunta = Math.random()*Math.PI*2;
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
-                map3.sisalto[i][j].korkeus *= map3.sisalto[i][j].korkeus;
+                map2.sisalto[i][j].korkeus *= map2.sisalto[i][j].korkeus;
                 map.sisalto[i][j].korkeus += 2*rinteisyys*Funktiot.kaanto(0, 0, i, j, jokisuunta)[0]/n;
             }
         }
@@ -664,7 +664,7 @@ public class Kartta {
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
                 if (map.sisalto[i][j].korkeus < jokisyvyys) map.sisalto[i][j].maankaytto = 1;
-                else map.sisalto[i][j].korkeus = jokisyvyys + (map.sisalto[i][j].korkeus - jokisyvyys)*map3.sisalto[i][j].korkeus;
+                else map.sisalto[i][j].korkeus = jokisyvyys + (map.sisalto[i][j].korkeus - jokisyvyys)*map2.sisalto[i][j].korkeus;
             }
         }
 
