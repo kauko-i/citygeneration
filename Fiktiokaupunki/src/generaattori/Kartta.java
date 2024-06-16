@@ -639,7 +639,7 @@ public class Kartta {
      */
     public static void main(String[] args) throws FileNotFoundException {
     	// perustiedot
-    	int n = 2048;
+    	final int n = 1024;
         Kartta map2 = new Kartta(n);
         // Luonnonmaantiede määritellään alussa. Keskustan vierestä virtaa joki, jonka uoma perustuu yhteen Perlin-kohinaan. Korkeuserot joen eri puolilla perustuvat kahteen eri Perlin-kohinaan.
         double h = 1;
@@ -654,7 +654,7 @@ public class Kartta {
                 map.sisalto[i][j].korkeus += 2*rinteisyys*Funktiot.kaanto(0, 0, i, j, jokisuunta)[0]/n;
             }
         }
-        double jokietaisyys = 50;
+        double jokietaisyys = 40;
         double[] jokipaikka = Funktiot.kaanto(n/2, n/2, n/2 + jokietaisyys, n/2, -jokisuunta);
         double jokipohja = map.sisalto[(int)jokipaikka[0]][(int)jokipaikka[1]].korkeus;
         for (int i = 0; i < n; i++) {
@@ -668,19 +668,43 @@ public class Kartta {
             }
         }
 
-        final int SADE = n/3;
-
-
+        // Vanhimman keskusta-alueen määritys
+        Funktio2RuutuaDouble vanhaKatu = (r1, r2) -> {
+            double d = Math.sqrt(etaisyys2(r1, r2));
+            double ele1 = r1.maankaytto != 1 ? r1.korkeus : jokisyvyys;
+            double ele2 = r2.maankaytto != 1 ? r2.korkeus : jokisyvyys;
+            d += (ele1 - ele2)*(ele1 - ele2);
+            final double siltahinta = 5;
+            if (r1.maankaytto == 1) d += siltahinta;
+            if (r2.maankaytto == 1) d += siltahinta;
+            return d;
+        };
+        ArrayList<int[]> katusuunnat = Funktiot.sadekeha(1);
+        for (int i = 2; i < 4; i++) katusuunnat.addAll(Funktiot.sadekeha(i));
+        FunktioRuutuRuutulist katukaaret = (r) -> {
+            ArrayList<Ruutu> palaute = new ArrayList<Ruutu>();
+            for (int[] suunta : katusuunnat) {
+                if (map.kartalla(r.x + suunta[0], r.y + suunta[1])) palaute.add(map.sisalto[r.x + suunta[0]][r.y + suunta[1]]);
+            }
+            return palaute;
+        };
+        double[][] etaisyydet = new double[n][n];
+        final int[] kayty = new int[]{0};
+        final int KESKUSALA = 8000;
+        map.dijkstra(map.sisalto[n/2][n/2], etaisyydet, new Ruutu[n][n], katukaaret, vanhaKatu, r -> {
+            r.maankaytto = 2;
+            return ++kayty[0] == KESKUSALA;
+        });
 
         String pvm = new SimpleDateFormat("ddHHmm").format(new Date());
         String kk = new SimpleDateFormat("yyMM").format(new Date());
-        Path kkPath = Paths.get("./piirrokset/jarjestys/"+kk);
+        Path kkPath = Paths.get("./jarjestys/"+kk);
         try {
             Files.createDirectories(kkPath);
         } catch (Exception e) {
             System.out.println(e);
         }
-        map.piirra("./piirrokset/jarjestys/"+kk+"/"+pvm+".png", new Color[] {Color.green, Color.blue, Color.pink, Color.gray, Color.orange, Color.green, Color.red}, new Color[] {null, Color.white}, Color.red, Color.black, new Color(102,51,0));
+        map.piirra("./jarjestys/"+kk+"/"+pvm+".png", new Color[] {Color.green, Color.blue, Color.pink, Color.gray, Color.orange, Color.green, Color.red}, new Color[] {null, Color.white}, Color.red, Color.black, new Color(102,51,0));
         /**
         int RANTAAN = 200;
         for (int i = n/2 - RANTAAN; i <= n/2 + RANTAAN; i++) {
