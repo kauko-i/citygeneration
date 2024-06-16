@@ -762,6 +762,54 @@ public class Kartta {
         rataedelliset[asema.x][asema.y] = asema2;
         Ruutu ulosmeno = map.dijkstra(asema, new double[n][n], rataedelliset, ratakaaret, rata, r -> r.x < RATAKEHA || r.y < RATAKEHA || n - RATAKEHA < r.x || n - RATAKEHA < r.y);
         map.luoTie(ulosmeno, asema, rataedelliset, r -> r.rataa = true);
+        final int RATAVYOHYKE = 5;
+        boolean[][] ratavyohykkeella = new boolean[n][n];
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (map.sisalto[i][j].rataa) {
+                    for (int k = i - RATAVYOHYKE; k <= i + RATAVYOHYKE; k++) {
+                        for (int l = j - RATAVYOHYKE; l <= j + RATAVYOHYKE; l++) {
+                            if (map.kartalla(k, l) && etaisyys2(map.sisalto[i][j], map.sisalto[k][l]) < RATAVYOHYKE*RATAVYOHYKE) ratavyohykkeella[k][l] = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Määrittele ulosmenoväylät
+        Funktio2RuutuaDouble ulosmenoKatu = (r1, r2) -> {
+            double d = vanhaKatu.f(r1, r2);
+            if (ratavyohykkeella[r1.x][r1.y]) d += 10;
+            if (ratavyohykkeella[r2.x][r2.y]) d += 10;
+            return d;
+        };
+        Ruutu[][] ulosmenoedelliset = new Ruutu[n][n];
+        double[][] ulosmenoetaisyydet = new double[n][n];
+        map.dijkstra(map.sisalto[n/2][n/2], ulosmenoetaisyydet, ulosmenoedelliset, katukaaret, ulosmenoKatu, r -> false);
+        Keko<Ruutu> reunakeko = new Keko<Ruutu>(r -> ulosmenoetaisyydet[r.x][r.y]/Math.sqrt(etaisyys2(r, map.sisalto[n/2][n/2])));
+        for (int i = 0; i < n - 1; i++) {
+            reunakeko.lisaa(map.sisalto[0][i]);
+            reunakeko.lisaa(map.sisalto[i + 1][0]);
+            reunakeko.lisaa(map.sisalto[n - 1][i + 1]);
+            reunakeko.lisaa(map.sisalto[i][n - 1]);
+        }
+        Ruutu portti = reunakeko.pienin();
+        map.luoTie(portti, map.sisalto[n/2][n/2], ulosmenoedelliset, r -> r.katu = 1);
+        ArrayList<Ruutu> portit = new ArrayList<Ruutu>();
+        portit.add(portti);
+        while (portit.size() < 3) {
+            Ruutu next = reunakeko.pienin();
+            double nextSuunta = Math.atan2(next.y - n/2, next.x - n/2);
+            boolean omallaSuunnalla = true;
+            for (Ruutu r : portit) {
+                double rSuunta = Math.atan2(r.y - n/2, r.x - n/2);
+                omallaSuunnalla = omallaSuunnalla && 1.5 < Math.min(Math.abs(rSuunta - nextSuunta), Math.PI*2 - Math.abs(rSuunta - nextSuunta));
+            }
+            if (omallaSuunnalla) {
+                portit.add(next);
+                map.luoTie(next, map.sisalto[n/2][n/2], ulosmenoedelliset, r -> r.katu = 1);
+            }
+        }
 
         // Save picture
         String pvm = new SimpleDateFormat("ddHHmm").format(new Date());
