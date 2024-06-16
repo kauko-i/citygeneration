@@ -692,10 +692,76 @@ public class Kartta {
         final int[] kayty = new int[]{0};
         final int KESKUSALA = 8000;
         map.dijkstra(map.sisalto[n/2][n/2], etaisyydet, new Ruutu[n][n], katukaaret, vanhaKatu, r -> {
-            r.maankaytto = 2;
+            r.maankaytto = r.maankaytto == 1 ? 1 : 2;
             return ++kayty[0] == KESKUSALA;
         });
 
+        // Rautatien toisen suunnan määritys
+        final int RAUTATIEASKEL = 64;
+        final Ruutu[][] rataedelliset = new Ruutu[n][n];
+        final Funktio2RuutuaDouble rata = (r1, r2) -> {
+            double e = 0;
+            double ele1 = r1.maankaytto != 1 ? r1.korkeus : jokisyvyys;
+            double ele2 = r2.maankaytto != 1 ? r2.korkeus : jokisyvyys;
+            e += 10*(ele1 - ele2)*(ele1 - ele2);
+            if (r1.maankaytto == 1) e += 10;
+            if (r2.maankaytto == 1) e += 10;
+            if (r1.maankaytto == 2) e += 5;
+            if (r2.maankaytto == 2) e += 5;
+            Ruutu r0 = rataedelliset[r1.x][r1.y];
+            if (r0 != null) {
+                int dx1 = r2.x - r1.x;
+                int dy1 = r2.y - r1.y;
+                int dx2 = r1.x - r0.x;
+                int dy2 = r1.y - r0.y;
+                double suunta1 = Math.atan2(dy1, dx1);
+                double suunta2 = Math.atan2(dy2, dx2);
+                double dSuunta = Math.min(Math.abs(suunta1 - suunta2), Math.PI*2 - Math.abs(suunta1 - suunta2));
+                e += 1000*dSuunta*dSuunta;
+            }
+            return e;
+        };
+        final int RATAKEHA = 5;
+        ArrayList<int[]> ratasuunnat = Funktiot.sadekeha(RATAKEHA);
+        FunktioRuutuRuutulist ratakaaret = (r) -> {
+            ArrayList<Ruutu> palaute = new ArrayList<Ruutu>();
+            for (int[] suunta : ratasuunnat) {
+                if (map.kartalla(r.x + suunta[0], r.y + suunta[1])) palaute.add(map.sisalto[r.x + suunta[0]][r.y + suunta[1]]);
+            }
+            return palaute;
+        };
+        ArrayList<Ruutu> parasRata = null;
+        double parasRataHinta = Double.POSITIVE_INFINITY;
+        Ruutu asema = null;
+        Ruutu asema2 = null;
+        for (int i = RAUTATIEASKEL/2; i < n; i += RAUTATIEASKEL) {
+            System.out.println(i);
+            Ruutu[] reunat = new Ruutu[]{map.sisalto[0][i], map.sisalto[i][0], map.sisalto[n - 1][i], map.sisalto[i][n - 1]};
+            for (Ruutu reuna : reunat) {
+                for (int k = 0; k < n; k++) {
+                    for (int j = 0; j < n; j++) rataedelliset[k][j] = null;
+                }
+                double[][] rataetaisyydet = new double[n][n];
+                Ruutu maali = map.dijkstra(reuna, rataetaisyydet, rataedelliset, ratakaaret, rata, r -> r.maankaytto == 2);
+                double suora = Math.sqrt(etaisyys2(maali, reuna));
+                if (rataetaisyydet[maali.x][maali.y]/suora < parasRataHinta) {
+                    parasRataHinta = rataetaisyydet[maali.x][maali.y]/suora;
+                    ArrayList<Ruutu> uusiParasRata = new ArrayList<Ruutu>();
+                    map.luoTie(maali, reuna, rataedelliset, r -> uusiParasRata.add(r));
+                    parasRata = uusiParasRata;
+                    asema = maali;
+                    asema2 = rataedelliset[asema.x][asema.y];
+                }
+            }
+        }
+        for (Ruutu r : parasRata) r.rataa = true;
+        asema.rakennus = 1;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) rataedelliset[i][j] = null;
+        }
+        rataedelliset[asema.x][asema.y] = asema2;
+        Ruutu ulosmeno = map.dijkstra(asema, new double[n][n], rataedelliset, ratakaaret, rata, r -> r.x < RATAKEHA || r.y < RATAKEHA || n - RATAKEHA < r.x || n - RATAKEHA < r.y);
+        map.luoTie(ulosmeno, asema, rataedelliset, r -> r.rataa = true);
         String pvm = new SimpleDateFormat("ddHHmm").format(new Date());
         String kk = new SimpleDateFormat("yyMM").format(new Date());
         Path kkPath = Paths.get("./jarjestys/"+kk);
