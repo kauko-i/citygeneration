@@ -691,7 +691,8 @@ public class Kartta {
         final int[] kayty = new int[]{0};
         final int KESKUSALA = 8000;
         map.dijkstra(map.sisalto[n/2][n/2], etaisyydet, new Ruutu[n][n], katukaaret, vanhaKatu, r -> {
-            r.maankaytto = r.maankaytto == 1 ? 1 : 2;
+            if (r.maankaytto == 1) return false;
+            r.maankaytto = 4;
             return ++kayty[0] == KESKUSALA;
         });
 
@@ -741,7 +742,7 @@ public class Kartta {
                     for (int j = 0; j < n; j++) rataedelliset[k][j] = null;
                 }
                 double[][] rataetaisyydet = new double[n][n];
-                Ruutu maali = map.dijkstra(reuna, rataetaisyydet, rataedelliset, ratakaaret, rata, r -> r.maankaytto == 2);
+                Ruutu maali = map.dijkstra(reuna, rataetaisyydet, rataedelliset, ratakaaret, rata, r -> r.maankaytto == 4);
                 double suora = Math.sqrt(etaisyys2(maali, reuna));
                 if (rataetaisyydet[maali.x][maali.y]/suora < parasRataHinta) {
                     parasRataHinta = rataetaisyydet[maali.x][maali.y]/suora;
@@ -753,6 +754,7 @@ public class Kartta {
                 }
             }
         }
+        System.out.println(parasRata.size());
         for (Ruutu r : parasRata) r.rataa = true;
         asema.rakennus = 1;
         for (int i = 0; i < n; i++) {
@@ -826,14 +828,38 @@ public class Kartta {
         final int esikaupunkiala = 700000;
         final int[] esikaupunkia = new int[]{0};
         map.dijkstra(map.sisalto[n/2][n/2], etaisyydetSillalla, new Ruutu[n][n], katukaaret, esikaupunkiKatu, r -> {
-            r.maankaytto = r.maankaytto == 0 ? 4 : r.maankaytto;
+            if (r.maankaytto != 0) return false;
+            r.maankaytto = 2;
             return ++esikaupunkia[0] == esikaupunkiala;
         });
-
-        // Save picture
         String pvm = new SimpleDateFormat("ddHHmm").format(new Date());
         String kk = new SimpleDateFormat("yyMM").format(new Date());
         Path kkPath = Paths.get("./jarjestys/"+kk);
+        try {
+            Files.createDirectories(kkPath);
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+        map.piirra("./jarjestys/"+kk+"/"+pvm+".png", new Color[] {Color.green, Color.blue, Color.pink, Color.gray, Color.orange, Color.green, Color.red}, new Color[] {null, Color.white}, Color.red, Color.black, new Color(102,51,0));
+
+        // Määrittele rakennusyksiköiden sijainnit
+        ArrayList<Ruutu> rakennukset = new ArrayList<Ruutu>();
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (map.sisalto[i][j].maankaytto == 4 && Math.random() < 0.25) {
+                    rakennukset.add(map.sisalto[i][j]);
+                    map.sisalto[i][j].maankaytto = 3;
+                } else if (map.sisalto[i][j].maankaytto == 2 && Math.random() < 0.025) {
+                    rakennukset.add(map.sisalto[i][j]);
+                    map.sisalto[i][j].maankaytto = 3;
+                }
+            }
+        }
+
+        // Save picture
+        pvm = new SimpleDateFormat("ddHHmm").format(new Date());
+        kk = new SimpleDateFormat("yyMM").format(new Date());
+        kkPath = Paths.get("./jarjestys/"+kk);
         try {
             Files.createDirectories(kkPath);
         } catch (Exception e) {
