@@ -8,6 +8,10 @@ import java.util.ArrayList;
  * @author Ilari Kauko
  */
 public class Funktiot {
+
+    public static interface Funktio2IntiaVoid {
+        public void f(int i, int j);
+    }
 	
 	private static final double GAUSS_ALKU = 1/Math.sqrt(2*Math.PI);
 
@@ -72,5 +76,24 @@ public class Funktiot {
         x -= x0;
         y -= y0;
         return new double[]{x0 + x*cos - y*sin, y0 + x*sin + y*cos};
+    }
+
+    public static void bresenham(int x1, int y1, int x2, int y2, Funktio2IntiaVoid kasittely) {
+        int minx = Math.min(x1, x2);
+        int miny = Math.min(y1, y2);
+        int maxx = Math.max(x1, x2);
+        int maxy = Math.max(y1, y2);
+        double d = 1.0*(y2 - y1)/(x2 - x1);
+        if (maxy - miny < maxx - minx) {
+            for (int i = minx; i <= maxx; i++) {
+                int j = (int)((i - x1)*d + y1);
+                kasittely.f(i, j);
+            }
+        } else {
+            for (int j = miny; j <= maxy; j++) {
+            	int i = (int)((j - y1)/d + x1);
+                kasittely.f(i, j);
+            }
+        }
     }
 }
