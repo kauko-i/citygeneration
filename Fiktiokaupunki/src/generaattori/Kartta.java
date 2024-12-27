@@ -112,22 +112,35 @@ public class Kartta {
 
     public static class Tontti {
         
-        public ArrayList<Ruutu> alue;
-        public double keskustaan;
-        public int nro;
-        public static int nextNro = 0;
+        private ArrayList<Ruutu> alue;
+        private double keskustaan;
+        private int nro;
+        private static int nextNro = 0;
 
         public Tontti(ArrayList<Ruutu> alue) {
             this.alue = alue;
             this.keskustaan = Double.POSITIVE_INFINITY;
             this.nro = ++nextNro;
-            System.out.println(this.nro);
         }
 
         @Override
         public String toString() {
             return ""+this.nro;
         }
+    }
+
+    public static class Kortteli {
+
+        private ArrayList<Tontti> tontit;
+        private ArrayList<Ruutu> reunuskadut;
+        private int rivi, sarake;
+
+        public Kortteli(ArrayList<Tontti> tontit, int rivi, int sarake) {
+            this.tontit = tontit;
+            this.reunuskadut = new ArrayList<Ruutu>();
+            this.rivi = rivi;
+            this.sarake = sarake;
+        } 
     }
     
     
@@ -646,7 +659,7 @@ public class Kartta {
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
                 double[] kaannetty = Funktiot.kaanto(n/2, n/2, i, j, rinne);
-                map.sisalto[i][j].korkeus += kaannetty[0]/n*korkeusero;
+                map.sisalto[i][j].korkeus += kaannetty[0]/n*korkeusero/2;
             }
         }
         double jarvikorkeus = Double.POSITIVE_INFINITY;
@@ -654,7 +667,7 @@ public class Kartta {
         for (int i = n/2 - keskustasade; i <= n/2 + keskustasade; i++) {
             for (int j = n/2 - keskustasade; j <= n/2 + keskustasade; j++) {
                 int d2 = map.etaisyys2(map.sisalto[i][j], map.sisalto[n/2][n/2]);
-                if (d2 <= keskustasade*keskustasade) map.sisalto[i][j].korkeus = 1.0*d2/keskustasade/keskustasade*map.sisalto[i][j].korkeus*d2/keskustasade/keskustasade + map.sisalto[n/2][n/2].korkeus*(1.0 - 1.0*d2/keskustasade/keskustasade);
+                if (d2 <= keskustasade*keskustasade) map.sisalto[i][j].korkeus = map.sisalto[i][j].korkeus*d2/keskustasade/keskustasade + map.sisalto[n/2][n/2].korkeus*(1.0 - 1.0*d2/keskustasade/keskustasade);
             }
         }
         for (int i = n/2 - keskustasade; i <= n/2 + keskustasade; i++) {
@@ -680,13 +693,7 @@ public class Kartta {
                 map.bresenham((int)paa1[0], (int)paa1[1], (int)paa2[0], (int)paa2[1], r -> {
                     if (r.maankaytto != 1 && map.etaisyys2(r, map.sisalto[n/2][n/2]) <= keskustasade*keskustasade*4) korkeudet.add(r);
                 });
-                double mean = 0;
-                for (int j = 0; j < korkeudet.size(); j++) mean += korkeudet.get(j).korkeus;
-                mean /= korkeudet.size();
-                double varianssi = 0;
-                for (int j = 0; j < korkeudet.size(); j++) varianssi += (korkeudet.get(j).korkeus - mean)*(korkeudet.get(j).korkeus - mean);
-                varianssi /= korkeudet.size();
-                keskivarianssi += varianssi;
+                if (korkeudet.size() != 0) keskivarianssi += Math.abs(korkeudet.get(0).korkeus - korkeudet.get(korkeudet.size() - 1).korkeus)/Math.sqrt(etaisyys2(korkeudet.get(0), korkeudet.get(korkeudet.size() - 1)));
             }
             if (maxvarianssi < keskivarianssi) {
                 maxvarianssi = keskivarianssi;
@@ -699,18 +706,27 @@ public class Kartta {
         final int VIISTO = 20;
         final int KATULEVEYS = 15;
         final int TONTTISIVU = 40;
-        ArrayList<ArrayList<Ruutu>> korttelit = new ArrayList<ArrayList<Ruutu>>();
+        final int KORTTELEITA_X = 10;
+        final int KORTTELEITA_Y = 15;
+        ArrayList<Kortteli> korttelit = new ArrayList<Kortteli>();
         ArrayList<Tontti> tontit = new ArrayList<Tontti>();
-        for (int i = n/2 - (PITKA_SIVU + KATULEVEYS)*9; i <= n/2 + (PITKA_SIVU + KATULEVEYS)*9; i += PITKA_SIVU + KATULEVEYS) {
-            for (int j = n/2 - (LYHYT_SIVU + KATULEVEYS)*10; j <= n/2 + (LYHYT_SIVU + KATULEVEYS)*10; j += LYHYT_SIVU + KATULEVEYS) {
+        Kortteli[][] korttelijarjestys = new Kortteli[KORTTELEITA_Y*2 + 1][KORTTELEITA_X*2 + 1];
+        int sarake = -1;
+        for (int i = n/2 - (PITKA_SIVU + KATULEVEYS)*KORTTELEITA_X; i <= n/2 + (PITKA_SIVU + KATULEVEYS)*KORTTELEITA_X; i += PITKA_SIVU + KATULEVEYS) {
+            sarake++;
+            int rivi = -1;
+            for (int j = n/2 - (LYHYT_SIVU + KATULEVEYS)*KORTTELEITA_Y; j <= n/2 + (LYHYT_SIVU + KATULEVEYS)*KORTTELEITA_Y; j += LYHYT_SIVU + KATULEVEYS) {
+                rivi++;
                 if (i == n/2 && j == n/2) continue;
+                Kortteli kortteli = new Kortteli(new ArrayList<Tontti>(), rivi, sarake);
+                korttelijarjestys[rivi][sarake] = kortteli;
                 double[] keskus = Funktiot.kaanto(n/2, n/2, i, j, jyrkinSuunta);
                 int di = (int)keskus[0];
                 int dj = (int)keskus[1];
-                ArrayList<Ruutu> korttelialue = new ArrayList<Ruutu>();
                 Tontti[] korttelitontit = new Tontti[8];
                 for (int k = di - PITKA_SIVU; k <= di + PITKA_SIVU; k++) {
                     for (int l = dj - PITKA_SIVU; l <= dj + PITKA_SIVU; l++) {
+                        if (!map.kartalla(k, l)) continue;
                         double[] kaannetty = Funktiot.kaanto(di, dj, k, l, -jyrkinSuunta);
                         double dii = kaannetty[0] - di;
                         double djj = kaannetty[1] - dj;
@@ -720,20 +736,24 @@ public class Kartta {
                                 korttelitontit[tonttinro] = new Tontti(new ArrayList<Ruutu>());
                             }
                             map.sisalto[k][l].tontti = korttelitontit[tonttinro];
-                            korttelialue.add(map.sisalto[k][l]);
                             korttelitontit[tonttinro].alue.add(map.sisalto[k][l]);
-                        }
-                        korttelit.add(korttelialue);
-                        for (Tontti t : korttelitontit) {
-                            if (t != null) tontit.add(t);
+                        } else if (-PITKA_SIVU/2 - KATULEVEYS < dii && dii < PITKA_SIVU/2 + KATULEVEYS && -LYHYT_SIVU/2 - KATULEVEYS < djj && djj < LYHYT_SIVU/2 + KATULEVEYS) {
+                            kortteli.reunuskadut.add(map.sisalto[k][l]);
                         }
                     }
                 }
+                for (Tontti t : korttelitontit) {
+                    if (t != null) {
+                        kortteli.tontit.add(t);
+                        tontit.add(t);
+                    }
+                }
+                korttelit.add(kortteli);
             }
         }
         Funktio2RuutuaDouble katu = (r1, r2) -> {
             double d = Math.sqrt(map.etaisyys2(r1, r2));
-            if (r2.maankaytto == 0) d += (r1.korkeus - r2.korkeus)*(r1.korkeus - r2.korkeus);
+            if (r2.maankaytto == 0) d += (r1.korkeus - r2.korkeus)*(r1.korkeus - r2.korkeus)*100;
             else d *= 10;
             return d;
         };
@@ -747,10 +767,10 @@ public class Kartta {
         };
         for (int i = 2; i < 4; i++) katukeha.addAll(Funktiot.sadekeha(i));
         double[][] keskustaan = new double[n][n];
-        map.dijkstra(map.sisalto[n/2][n/2], keskustaan, new Ruutu[n][n], katunaapurit, katu, r -> n/4 < keskustaan[r.x][r.y]);
+        map.dijkstra(map.sisalto[n/2][n/2], keskustaan, new Ruutu[n][n], katunaapurit, katu, r -> n/2 < keskustaan[r.x][r.y]);
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
-                if (keskustaan[i][j] < n/4) map.sisalto[i][j].katu = 1;
+                if (keskustaan[i][j] < n/2) map.sisalto[i][j].katu = 1;
             }
         }
         ArrayList<Tontti> toteutuvat = new ArrayList<Tontti>();
@@ -773,11 +793,84 @@ public class Kartta {
                 if (map.sisalto[i][j].tontti != null && !toteutuvat.contains(map.sisalto[i][j].tontti)) map.sisalto[i][j].tontti = null;
             }
         }
-        for (Tontti t : tontit) {
-            if (t.keskustaan < n/8) {
-                for (Ruutu r : t.alue) r.maankaytto = 2;
+        for (int i = korttelit.size() - 1; i >= 0; i--) {
+            boolean toteutuu = false;
+            for (Tontti t : korttelit.get(i).tontit) toteutuu = toteutuu || toteutuvat.contains(t);
+            if (!toteutuu) {
+                korttelijarjestys[korttelit.get(i).rivi][korttelit.get(i).sarake] = null;
+                korttelit.remove(i);
             }
         }
+        boolean[][] rantakadut = new boolean[n][n];
+        boolean[][] puistonpaalla = new boolean[n][n];
+        boolean[][] esikaupunkikadut = new boolean[n][n];
+        for (Kortteli kortteli : korttelit) {
+            int vedessa = 0;
+            boolean keskustassa = false;
+            int koko = 0;
+            for (Tontti t : kortteli.tontit) {
+                keskustassa = keskustassa || t.keskustaan < n/4;
+                for (Ruutu r : t.alue) {
+                    if (r.maankaytto == 1) vedessa++;
+                    koko++;
+                }
+            }
+            if (vedessa == koko) {
+                System.out.println("vedessä");
+                for (Tontti t : kortteli.tontit) {
+                    for (Ruutu r : t.alue) r.tontti = null;
+                }
+                continue;
+            }
+            if (!keskustassa) {
+                System.out.println("reunalla");
+                for (Tontti t : kortteli.tontit) {
+                    for (int i = t.alue.size() - 1; i >= 0; i--) {
+                        if (t.alue.get(i).maankaytto == 1) {
+                            t.alue.get(i).tontti = null;
+                            t.alue.remove(i);
+                        }
+                    }
+                }
+                for (Ruutu r : kortteli.reunuskadut) esikaupunkikadut[r.x][r.y] = true;
+                continue;
+            }
+            System.out.println("keskustassa");
+            boolean rannalla = 0 < vedessa;
+            boolean puistoa = rannalla && koko/2 < vedessa;
+            for (Tontti t : kortteli.tontit) {
+                for (int i = t.alue.size() - 1; i >= 0; i--) {
+                    if (puistoa) {
+                        t.alue.get(i).maankaytto = t.alue.get(i).maankaytto == 0 ? 5 : 1;
+                        t.alue.get(i).tontti = null;
+                        t.alue.remove(i);
+                    } else {
+                        t.alue.get(i).korkeus = t.alue.get(i).maankaytto == 1 ? jarvikorkeus : t.alue.get(i).korkeus;
+                        t.alue.get(i).maankaytto = 0;
+                    }
+                }
+            }
+            if (!puistoa) {
+                for (Ruutu r : kortteli.reunuskadut) {
+                    rantakadut[r.x][r.y] = true;
+                }
+            } else {
+                for (Ruutu r : kortteli.reunuskadut) {
+                    puistonpaalla[r.x][r.y] = true;
+                }
+            }
+        }
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (rantakadut[i][j]) map.sisalto[i][j].katu = 1;
+                else if (map.sisalto[i][j].katu != 0 && map.sisalto[i][j].maankaytto == 1) map.sisalto[i][j].katu = 0;
+                else if (map.sisalto[i][j].maankaytto != 1 && puistonpaalla[i][j] && !rantakadut[i][j] && !esikaupunkikadut[i][j]) {
+                    map.sisalto[i][j].katu = 0;
+                    map.sisalto[i][j].maankaytto = 5;
+                }
+            }
+        }
+
         // Kartta yksilöidään valmistumisajankohtansa mukaan.
         String kk = new SimpleDateFormat("yyMM").format(new Date());
         if (!Files.isDirectory(Paths.get("/home/ilari/kaupungit/kuvat/"+kk))) new File("/home/ilari/kaupungit/kuvat/"+kk).mkdirs();
