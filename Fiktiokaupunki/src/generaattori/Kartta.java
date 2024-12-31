@@ -114,13 +114,60 @@ public class Kartta {
         
         private ArrayList<Ruutu> alue;
         private double keskustaan;
-        private int nro;
+        private int nro, keskusx, keskusy;
         private static int nextNro = 0;
 
         public Tontti(ArrayList<Ruutu> alue) {
             this.alue = alue;
             this.keskustaan = Double.POSITIVE_INFINITY;
             this.nro = ++nextNro;
+            this.keskusx = Integer.MIN_VALUE;
+            this.keskusy = Integer.MIN_VALUE;
+        }
+
+        public void maaritaKeskus() {
+            int minx = Integer.MAX_VALUE;
+            int maxx = Integer.MIN_VALUE;
+            int miny = Integer.MAX_VALUE;
+            int maxy = Integer.MIN_VALUE;
+            for (Ruutu r : this.alue) {
+                minx = Math.min(minx, r.x);
+                maxx = Math.max(maxx, r.x);
+                miny = Math.min(miny, r.y);
+                maxy = Math.max(maxy, r.y);
+            }
+            this.keskusx = (minx + maxx)/2;
+            this.keskusy = (miny + maxy)/2;
+        }
+
+        public void rakenna(int ala, int syvyys, double kulma, double[][] katuun) {
+            if (ala < syvyys*syvyys/2) return;
+            if (this.keskusx == Integer.MIN_VALUE || this.keskusy == Integer.MIN_VALUE) this.maaritaKeskus();
+            double sivu = Math.sqrt(this.alue.size());
+            double marginaali = 16;
+            if (ala < sivu*syvyys/3*2) {
+                boolean kulmassa = Math.random() < 0.5;
+                double liikkumavara = kulmassa ? (sivu - Math.sqrt(ala*ala/syvyys/syvyys + syvyys*syvyys) - marginaali)/2 : (sivu - ala/syvyys - marginaali)/2;
+                double rakennuskulma = kulmassa ? Math.random()*Math.PI : kulma;
+                if (Math.random() < 0.5) rakennuskulma += Math.PI/2;
+                double di = Math.random()*(liikkumavara*2 - liikkumavara);
+                double dj = Math.random()*(liikkumavara*2 - liikkumavara);
+                for (Ruutu r : this.alue) {
+                    double[] suoraVastine = Funktiot.kaanto(this.keskusx + di, this.keskusy + dj, r.x, r.y, rakennuskulma);
+                    if (Math.abs(suoraVastine[0] - di - this.keskusx) < syvyys/2 && Math.abs(suoraVastine[1] - dj - this.keskusy) < ala/syvyys/2) r.maankaytto = 6;
+                }
+                return;
+            }
+            int rakennettu = 0;
+            for (Ruutu r : this.alue) {
+                if (katuun[r.x][r.y] <= syvyys) {
+                    r.maankaytto = 6;
+                    rakennettu++;
+                }
+                if (ala*1.1 < rakennettu) {
+
+                }
+            }
         }
 
         @Override
@@ -704,7 +751,7 @@ public class Kartta {
         final int PITKA_SIVU = 160;
         final int LYHYT_SIVU = 80;
         final int VIISTO = 20;
-        final int KATULEVEYS = 15;
+        final int KATULEVEYS = 20;
         final int TONTTISIVU = 40;
         final int KORTTELEITA_X = 10;
         final int KORTTELEITA_Y = 15;
@@ -790,7 +837,9 @@ public class Kartta {
         }
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
-                if (map.sisalto[i][j].tontti != null && !toteutuvat.contains(map.sisalto[i][j].tontti)) map.sisalto[i][j].tontti = null;
+                if (map.sisalto[i][j].tontti != null && !toteutuvat.contains(map.sisalto[i][j].tontti)) {
+                    map.sisalto[i][j].tontti = null;
+                }
             }
         }
         for (int i = korttelit.size() - 1; i >= 0; i--) {
@@ -810,6 +859,7 @@ public class Kartta {
             int koko = 0;
             for (Tontti t : kortteli.tontit) {
                 keskustassa = keskustassa || t.keskustaan < n/4;
+                if (t.alue == null) continue;
                 for (Ruutu r : t.alue) {
                     if (r.maankaytto == 1) vedessa++;
                     koko++;
@@ -975,12 +1025,70 @@ public class Kartta {
                 }
             }
         }
+        boolean[][] kadussa = new boolean[n][n];
+        double[][] katuun = new double[n][n];
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) katuun[i][j] = Double.POSITIVE_INFINITY;
+        }
+        int syvyys = 12;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (map.sisalto[i][j].katu != 0) {
+                    for (int k = i - syvyys; k <= i + syvyys; k++) {
+                        for (int l = j - syvyys; l <= j + syvyys; l++) {
+                            if (map.kartalla(k, l) && (k - i)*(k - i) + (l - j)*(l - j) <= syvyys*syvyys) kadussa[k][l] = true;
+                            katuun[k][l] = Math.min(katuun[k][l], Math.sqrt((k - i)*(k - i) + (l - j)*(l - j)));
+                        }
+                    }
+                }
+            }
+        }
+        for (int i = 0; i < korttelijarjestys.length; i++) {
+            for (int j = 0; j < korttelijarjestys[i].length; j++) {
+                if (korttelijarjestys[i][j] == null) continue;
+                double meankorkeus = 0;
+                int koko = 0;
+                for (Tontti t : korttelijarjestys[i][j].tontit) {
+                    for (Ruutu r : t.alue) {
+                        if (r.tontti != null) {
+                            koko++;
+                            meankorkeus += r.korkeus;
+                        }
+                    }
+                }
+                meankorkeus /= koko;
+                double varianssi = 0;
+                for (Tontti t : korttelijarjestys[i][j].tontit) {
+                    for (Ruutu r : t.alue) {
+                        if (r.tontti != null) {
+                            varianssi += (r.korkeus - meankorkeus)*(r.korkeus - meankorkeus);
+                        }
+                    }
+                }
+                varianssi /= koko;
+                if (20 < varianssi) {
+                    for (Tontti t : korttelijarjestys[i][j].tontit) {
+                        for (Ruutu r : t.alue) {
+                            r.tontti = null;
+                            r.maankaytto = 5;
+                        }
+                    }
+                    continue;
+                }
+                double sd = n/4;
+                for (Tontti t : korttelijarjestys[i][j].tontit) {
+                    double ala = Funktiot.gauss(t.keskustaan/sd)*syvyys*KORTTELISIVU*(Math.random() + Math.random());
+                    System.out.println("ala-prosentti: "+Funktiot.gauss(t.keskustaan/sd));
+                    t.rakenna((int)ala, syvyys, -jyrkinSuunta, katuun);
+                }
+            }
+        }
 
         // Kartta yksilöidään valmistumisajankohtansa mukaan.
         String kk = new SimpleDateFormat("yyMM").format(new Date());
         if (!Files.isDirectory(Paths.get("/home/ilari/kaupungit/kuvat/"+kk))) new File("/home/ilari/kaupungit/kuvat/"+kk).mkdirs();
         String pvm = new SimpleDateFormat("ddHHmm").format(new Date());
-        map.piirra("/home/ilari/kaupungit/kuvat/"+kk+"/"+pvm+".png", new Color[] {Color.green, Color.blue, Color.pink, Color.gray, Color.orange, new Color(0,128,0), Color.red}, new Color[] {null, Color.white}, Color.red, Color.black, new Color(102,51,0));
+        map.piirra("/home/ilari/kaupungit/kuvat/"+kk+"/"+pvm+".png", new Color[] {Color.green, Color.blue, Color.pink, Color.gray, Color.orange, new Color(0,128,0), Color.gray}, new Color[] {null, Color.white}, Color.red, Color.black, new Color(102,51,0));
        // map.kirjoita("/home/ilari-perus/kaupungit/tietokannat/"+pvm+".dat");
     }
 }
